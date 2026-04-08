@@ -1,21 +1,4 @@
-<!--
-  DEUDATRACKER — Instrucciones de instalación en celular
 
-  ANDROID (Chrome):
-  1. Abrí este archivo en Chrome
-  2. Menú (⋮) → "Agregar a pantalla de inicio"
-  3. Confirmá → queda como ícono de app
-
-  iOS (Safari):
-  1. Abrí este archivo en Safari
-  2. Botón compartir (□↑) → "Agregar a pantalla de inicio"
-  3. Confirmá → queda como ícono sin barra del navegador
-
-  Para pasar el archivo al celular:
-  - Android: conectá por USB y copiá el archivo a Descargas
-  - iOS: mandátelo por AirDrop, Mail o guardalo en iCloud Drive
-  - Ambos: subilo a Google Drive y descargalo desde el celular
--->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,537 +18,571 @@
     @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+    body { margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #1a1a1a; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #333333; border-radius: 4px; }
+    #root { min-height: 100vh; }
+    #loading { position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a1a;color:#ececec;font-family:'Inter',sans-serif;font-size:16px;z-index:9999; }
   </style>
-  <script>
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        const CACHE = 'deudatracker-v1';
-        const URLS = [
-          'https://unpkg.com/react@18/umd/react.production.min.js',
-          'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-          'https://unpkg.com/@babel/standalone/babel.min.js',
-          'https://unpkg.com/recharts@2/umd/Recharts.js',
-          'https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.js',
-          'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
-        ];
-        self.addEventListener('install', e =>
-          e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)))
-        );
-        self.addEventListener('fetch', e =>
-          e.respondWith(
-            caches.match(e.request).then(r => r || fetch(e.request))
-          )
-        );
-      `;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl)
-        .catch(e => console.warn('SW no disponible:', e));
-    }
-  </script>
 </head>
 <body>
+  <div id="loading">Cargando DeudaTracker...</div>
   <div id="root"></div>
 
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
-  <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" crossorigin></script>
+  <script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.js" crossorigin></script>
 
-  <script type="text/babel">
-    const { useState, useEffect, useContext, createContext, useCallback, useRef, useMemo, useId } = React;
-    const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } = Recharts;
-    const { Plus, Trash2, Edit3, Paperclip, X, Sun, Moon, CreditCard,
-            ChevronDown, ChevronUp, Search, Calendar, DollarSign,
-            TrendingDown, Clock, AlertTriangle, Check, Download, Eye,
-            Bike, Copy, Share2, History } = lucide;
+  <script>
+  // ─── diagnostic: verificar globals ───────────────────────────
+  window.addEventListener('load', function() {
+    var missing = [];
+    if (!window.React)   missing.push('React');
+    if (!window.ReactDOM) missing.push('ReactDOM');
+    if (!window.Recharts) missing.push('Recharts');
+    if (!window.lucide)  missing.push('lucide');
+    if (missing.length) {
+      document.getElementById('loading').textContent =
+        'Error cargando librerías: ' + missing.join(', ') +
+        '. Verificá tu conexión a internet.';
+      return;
+    }
+    initApp();
+  });
+
+  function initApp() {
+    document.getElementById('loading').style.display = 'none';
+
+    var React    = window.React;
+    var ReactDOM = window.ReactDOM;
+
+    var useState      = React.useState;
+    var useEffect     = React.useEffect;
+    var useContext    = React.useContext;
+    var createContext = React.createContext;
+    var useCallback   = React.useCallback;
+    var useRef        = React.useRef;
+    var useMemo       = React.useMemo;
+    var useId         = React.useId;
+    var createElement = React.createElement;
+    var Fragment      = React.Fragment;
+
+    var R = window.Recharts;
+    var BarChart          = R.BarChart;
+    var Bar               = R.Bar;
+    var XAxis             = R.XAxis;
+    var YAxis             = R.YAxis;
+    var CartesianGrid     = R.CartesianGrid;
+    var Tooltip           = R.Tooltip;
+    var ResponsiveContainer = R.ResponsiveContainer;
+    var AreaChart         = R.AreaChart;
+    var Area              = R.Area;
+
+    // Lucide icons — helper para crear icono SVG simple si lucide falla
+    function makeIcon(name) {
+      var L = window.lucide;
+      if (L && L.createElement) {
+        // lucide UMD expone createIcons / createElement diferente según versión
+      }
+      // Fallback: retorna un span con el nombre
+      return function Icon(props) {
+        var size = props.size || 16;
+        var color = props.color || 'currentColor';
+        var L = window.lucide;
+        if (L && L[name]) {
+          // lucide@0.383 UMD: each icon is an array [tag, attrs, children]
+          var iconDef = L[name];
+          if (Array.isArray(iconDef)) {
+            var children = (iconDef[2] || []).map(function(child, i) {
+              return createElement(child[0], Object.assign({ key: i }, child[1]));
+            });
+            return createElement('svg', Object.assign({
+              xmlns: 'http://www.w3.org/2000/svg',
+              width: size, height: size,
+              viewBox: '0 0 24 24',
+              fill: 'none',
+              stroke: color,
+              strokeWidth: 2,
+              strokeLinecap: 'round',
+              strokeLinejoin: 'round',
+              style: props.style || {}
+            }, iconDef[1] || {}), children);
+          }
+        }
+        return createElement('span', { style: { width: size, height: size, display: 'inline-block', fontSize: size * 0.6, color: color } }, '');
+      };
+    }
+
+    var Plus          = makeIcon('Plus');
+    var Trash2        = makeIcon('Trash2');
+    var Edit3         = makeIcon('Edit3');
+    var Paperclip     = makeIcon('Paperclip');
+    var X             = makeIcon('X');
+    var Sun           = makeIcon('Sun');
+    var Moon          = makeIcon('Moon');
+    var CreditCard    = makeIcon('CreditCard');
+    var ChevronDown   = makeIcon('ChevronDown');
+    var ChevronUp     = makeIcon('ChevronUp');
+    var Calendar      = makeIcon('Calendar');
+    var DollarSign    = makeIcon('DollarSign');
+    var TrendingDown  = makeIcon('TrendingDown');
+    var Clock         = makeIcon('Clock');
+    var AlertTriangle = makeIcon('AlertTriangle');
+    var Check         = makeIcon('Check');
+    var Download      = makeIcon('Download');
+    var Eye           = makeIcon('Eye');
+    var Bike          = makeIcon('Bike');
+    var Copy          = makeIcon('Copy');
+    var Share2        = makeIcon('Share2');
+    var History       = makeIcon('History');
+
+    // ─── shorthand ───────────────────────────────────────────────
+    var e = createElement;
 
     // ============================================================
     // THEME CONTEXT
     // ============================================================
-    const ThemeContext = createContext();
-    const QuickPayContext = createContext();
-    const darkTheme = {
-      bg: "#1a1a1a", surface: "#242424", border: "#333333",
-      text: "#ececec", textSecondary: "#888888",
-      accent: "#DC143C", accentSecondary: "#c01230", accentHover: "#a50f28",
-      success: "#22c55e", warning: "#f59e0b", danger: "#ef4444",
-      inputBg: "#2a2a2a", modalOverlay: "rgba(0,0,0,0.7)",
+    var ThemeContext    = createContext();
+    var QuickPayContext = createContext();
+    var ToastContext    = createContext();
+
+    var darkTheme = {
+      bg: '#1a1a1a', surface: '#242424', border: '#333333',
+      text: '#ececec', textSecondary: '#888888',
+      accent: '#DC143C', accentSecondary: '#c01230', accentHover: '#a50f28',
+      success: '#22c55e', warning: '#f59e0b', danger: '#ef4444',
+      inputBg: '#2a2a2a', modalOverlay: 'rgba(0,0,0,0.7)',
     };
-    const lightTheme = {
-      bg: "#f5f5f5", surface: "#ffffff", border: "#e0e0e0",
-      text: "#1a1a1a", textSecondary: "#666666",
-      accent: "#7C3AED", accentSecondary: "#F59E0B", accentHover: "#6d28d9",
-      success: "#16a34a", warning: "#d97706", danger: "#dc2626",
-      inputBg: "#f0f0f0", modalOverlay: "rgba(0,0,0,0.4)",
+    var lightTheme = {
+      bg: '#f5f5f5', surface: '#ffffff', border: '#e0e0e0',
+      text: '#1a1a1a', textSecondary: '#666666',
+      accent: '#7C3AED', accentSecondary: '#F59E0B', accentHover: '#6d28d9',
+      success: '#16a34a', warning: '#d97706', danger: '#dc2626',
+      inputBg: '#f0f0f0', modalOverlay: 'rgba(0,0,0,0.4)',
     };
 
     // ============================================================
     // HELPERS
     // ============================================================
-    const fmt = (n) => {
-      if (n == null || isNaN(n)) return "$0";
-      return "$" + Math.round(Number(n)).toLocaleString("es-AR");
-    };
-    const parseArgNum = (s) => {
-      if (typeof s === "number") return s;
-      return Number(String(s).replace(/[^0-9]/g, "")) || 0;
-    };
-    const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    const todayStr = () => new Date().toISOString().split("T")[0];
-    const addMonths = (mesKey, n) => {
-      let [y, m] = mesKey.split("-").map(Number);
+    function fmt(n) {
+      if (n == null || isNaN(n)) return '$0';
+      return '$' + Math.round(Number(n)).toLocaleString('es-AR');
+    }
+    function parseArgNum(s) {
+      if (typeof s === 'number') return s;
+      return Number(String(s).replace(/[^0-9]/g, '')) || 0;
+    }
+    var monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+    function todayStr() { return new Date().toISOString().split('T')[0]; }
+    function addMonths(mesKey, n) {
+      var parts = mesKey.split('-').map(Number);
+      var y = parts[0], m = parts[1];
       m += n;
       while (m > 12) { m -= 12; y++; }
-      while (m < 1) { m += 12; y--; }
-      return `${y}-${String(m).padStart(2, "0")}`;
-    };
-    const daysUntil = (dateStr) => {
+      while (m < 1)  { m += 12; y--; }
+      return y + '-' + String(m).padStart(2,'0');
+    }
+    function daysUntil(dateStr) {
       if (!dateStr) return Infinity;
-      const d = new Date(dateStr + "T00:00:00");
-      const now = new Date(); now.setHours(0,0,0,0);
+      var d = new Date(dateStr + 'T00:00:00');
+      var now = new Date(); now.setHours(0,0,0,0);
       return Math.ceil((d - now) / 86400000);
-    };
+    }
 
     // ============================================================
-    // DATA DEFAULTS
+    // STORAGE
     // ============================================================
-    const defaultPrestamo = { acreedor: "Mamá", montoTotal: 2600000, fechaInicio: "2025-01-01", estado: "en_curso", pagos: [] };
-    const defaultNaranjaX = { nombre: "Naranja X", movimientos: [], pagosMensuales: [], vencimientos: {} };
-    const defaultMercadoCredito = { nombre: "Mercado Crédito", movimientos: [], pagosMensuales: [], vencimientos: {} };
-    const load = (key, def) => { try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : def; } catch { return def; } };
-    const save = (key, val) => {
+    var defaultPrestamo      = { acreedor: 'Mamá', montoTotal: 2600000, fechaInicio: '2025-01-01', estado: 'en_curso', pagos: [] };
+    var defaultNaranjaX      = { nombre: 'Naranja X', movimientos: [], pagosMensuales: [], vencimientos: {} };
+    var defaultMercadoCredito= { nombre: 'Mercado Crédito', movimientos: [], pagosMensuales: [], vencimientos: {} };
+
+    function load(key, def) {
+      try { var d = localStorage.getItem(key); return d ? JSON.parse(d) : def; }
+      catch(e) { return def; }
+    }
+    function save(key, val) {
       try { localStorage.setItem(key, JSON.stringify(val)); }
-      catch(e) {
-        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      catch(err) {
+        if (err instanceof DOMException && err.name === 'QuotaExceededError')
           window.dispatchEvent(new CustomEvent('storageQuotaExceeded'));
-        }
       }
-    };
+    }
 
     // ============================================================
-    // TOAST SYSTEM
+    // TOAST PROVIDER
     // ============================================================
-    const ToastContext = createContext();
-    function ToastProvider({ children }) {
-      const [toasts, setToasts] = useState([]);
-      const add = useCallback((msg, type = "success") => {
-        const id = uid();
-        setToasts(p => [...p, { id, msg, type }]);
-        setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3000);
+    function ToastProvider(props) {
+      var state = useState([]);
+      var toasts = state[0], setToasts = state[1];
+      var add = useCallback(function(msg, type) {
+        type = type || 'success';
+        var id = uid();
+        setToasts(function(p) { return p.concat([{ id: id, msg: msg, type: type }]); });
+        setTimeout(function() { setToasts(function(p) { return p.filter(function(t) { return t.id !== id; }); }); }, 3000);
       }, []);
-      return (
-        <ToastContext.Provider value={add}>
-          {children}
-          <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>
-            {toasts.map(t => {
-              const colors = { success: "#22c55e", error: "#ef4444", info: "#DC143C" };
-              return (
-                <div key={t.id} style={{
-                  background: "#242424", color: "#ececec", padding: "12px 20px",
-                  borderRadius: 10, borderLeft: `4px solid ${colors[t.type] || "#DC143C"}`,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.3)", fontSize: 14, maxWidth: 320,
-                  animation: "slideIn 0.3s ease", fontFamily: "'Inter', system-ui, sans-serif",
-                }}>{t.msg}</div>
-              );
-            })}
-          </div>
-        </ToastContext.Provider>
+
+      var colors = { success: '#22c55e', error: '#ef4444', info: '#DC143C' };
+      return e(ToastContext.Provider, { value: add },
+        props.children,
+        e('div', { style: { position:'fixed', bottom:20, right:20, zIndex:9999, display:'flex', flexDirection:'column', gap:8 } },
+          toasts.map(function(t) {
+            return e('div', {
+              key: t.id,
+              style: {
+                background:'#242424', color:'#ececec', padding:'12px 20px',
+                borderRadius:10, borderLeft:'4px solid '+(colors[t.type]||'#DC143C'),
+                boxShadow:'0 8px 32px rgba(0,0,0,0.3)', fontSize:14, maxWidth:320,
+                animation:'slideIn 0.3s ease', fontFamily:"'Inter',system-ui,sans-serif",
+              }
+            }, t.msg);
+          })
+        )
       );
     }
 
     // ============================================================
     // MODAL
     // ============================================================
-    function Modal({ open, onClose, title, children, wide }) {
-      const theme = useContext(ThemeContext);
-      useEffect(() => {
+    function Modal(props) {
+      var open = props.open, onClose = props.onClose, title = props.title, wide = props.wide;
+      var theme = useContext(ThemeContext);
+      useEffect(function() {
         if (!open) return;
-        const handler = (e) => { if (e.key === "Escape") onClose(); };
-        window.addEventListener("keydown", handler);
-        return () => window.removeEventListener("keydown", handler);
+        function handler(ev) { if (ev.key === 'Escape') onClose(); }
+        window.addEventListener('keydown', handler);
+        return function() { window.removeEventListener('keydown', handler); };
       }, [open, onClose]);
       if (!open) return null;
-      return (
-        <div onClick={onClose} style={{
-          position: "fixed", inset: 0, background: theme.modalOverlay,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 1000, padding: 16, animation: "fadeIn 0.2s ease",
-        }}>
-          <div onClick={e => e.stopPropagation()} style={{
-            background: theme.surface, borderRadius: 16, padding: 28,
-            width: "100%", maxWidth: wide ? 720 : 480, maxHeight: "85vh",
-            overflowY: "auto", border: `1px solid ${theme.border}`,
-            boxShadow: "0 24px 64px rgba(0,0,0,0.4)", animation: "scaleIn 0.3s ease",
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, color: theme.text, fontSize: 20, fontWeight: 700 }}>{title}</h3>
-              <button onClick={onClose} style={{ background: "none", border: "none", color: theme.textSecondary, cursor: "pointer", padding: 4 }}><X size={20} /></button>
-            </div>
-            {children}
-          </div>
-        </div>
+      return e('div', {
+        onClick: onClose,
+        style: { position:'fixed', inset:0, background:theme.modalOverlay, display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16, animation:'fadeIn 0.2s ease' }
+      },
+        e('div', {
+          onClick: function(ev) { ev.stopPropagation(); },
+          style: { background:theme.surface, borderRadius:16, padding:28, width:'100%', maxWidth:wide?720:480, maxHeight:'85vh', overflowY:'auto', border:'1px solid '+theme.border, boxShadow:'0 24px 64px rgba(0,0,0,0.4)', animation:'scaleIn 0.3s ease' }
+        },
+          e('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 } },
+            e('h3', { style: { margin:0, color:theme.text, fontSize:20, fontWeight:700 } }, title),
+            e('button', { onClick:onClose, style:{ background:'none', border:'none', color:theme.textSecondary, cursor:'pointer', padding:4 } }, e(X, { size:20 }))
+          ),
+          props.children
+        )
       );
     }
 
     // ============================================================
-    // CONFIRM DIALOG HOOK
+    // CONFIRM HOOK
     // ============================================================
     function useConfirm() {
-      const [state, setState] = useState(null);
-      const confirm = useCallback((msg) => new Promise(res => setState({ msg, resolve: res })), []);
-      const Dialog = () => {
-        const theme = useContext(ThemeContext);
-        if (!state) return null;
-        const answer = (v) => { state.resolve(v); setState(null); };
-        return (
-          <Modal open={true} onClose={() => answer(false)} title="Confirmar">
-            <p style={{ color: theme.text, marginBottom: 20, lineHeight: 1.5 }}>{state.msg}</p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-              <Btn secondary onClick={() => answer(false)}>Cancelar</Btn>
-              <Btn onClick={() => answer(true)}>Confirmar</Btn>
-            </div>
-          </Modal>
+      var state = useState(null);
+      var st = state[0], setSt = state[1];
+      var confirm = useCallback(function(msg) {
+        return new Promise(function(res) { setSt({ msg:msg, resolve:res }); });
+      }, []);
+      function Dialog() {
+        var theme = useContext(ThemeContext);
+        if (!st) return null;
+        function answer(v) { st.resolve(v); setSt(null); }
+        return e(Modal, { open:true, onClose:function(){ answer(false); }, title:'Confirmar' },
+          e('p', { style:{ color:theme.text, marginBottom:20, lineHeight:1.5 } }, st.msg),
+          e('div', { style:{ display:'flex', gap:12, justifyContent:'flex-end' } },
+            e(Btn, { secondary:true, onClick:function(){ answer(false); } }, 'Cancelar'),
+            e(Btn, { onClick:function(){ answer(true); } }, 'Confirmar')
+          )
         );
-      };
+      }
       return [confirm, Dialog];
     }
 
     // ============================================================
-    // REUSABLE UI COMPONENTS
+    // BTN
     // ============================================================
-    function Btn({ children, onClick, secondary, danger, small, disabled, style: sx }) {
-      const theme = useContext(ThemeContext);
-      const [hov, setHov] = useState(false);
-      const base = danger ? theme.danger : secondary ? "transparent" : theme.accent;
-      const hovBg = danger ? "#b91c1c" : secondary ? theme.border : theme.accentHover;
-      return (
-        <button onClick={onClick} disabled={disabled}
-          onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-          style={{
-            background: hov ? hovBg : base, color: secondary ? theme.text : "#fff",
-            border: secondary ? `1px solid ${theme.border}` : "none",
-            padding: small ? "6px 14px" : "10px 22px", borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer",
-            fontSize: small ? 13 : 14, fontWeight: 600, transition: "all 0.2s ease",
-            display: "inline-flex", alignItems: "center", gap: 8, opacity: disabled ? 0.5 : 1,
-            fontFamily: "'Inter', system-ui, sans-serif", ...sx,
-          }}>{children}</button>
-      );
-    }
-
-    function Input({ label, value, onChange, type = "text", placeholder, mono, style: sx }) {
-      const theme = useContext(ThemeContext);
-      return (
-        <div style={{ marginBottom: 14 }}>
-          {label && <label style={{ display: "block", color: theme.textSecondary, fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>}
-          <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-            style={{
-              width: "100%", boxSizing: "border-box", padding: "10px 14px", borderRadius: 10,
-              border: `1px solid ${theme.border}`, background: theme.inputBg, color: theme.text,
-              fontSize: 14, outline: "none", transition: "border-color 0.2s ease",
-              fontFamily: mono ? "'SFMono-Regular', ui-monospace, monospace" : "'Inter', system-ui, sans-serif", ...sx,
-            }}
-            onFocus={e => e.target.style.borderColor = theme.accent}
-            onBlur={e => e.target.style.borderColor = theme.border}
-          />
-        </div>
-      );
+    function Btn(props) {
+      var theme = useContext(ThemeContext);
+      var hov = useState(false);
+      var isHov = hov[0], setHov = hov[1];
+      var base   = props.danger ? theme.danger : props.secondary ? 'transparent' : theme.accent;
+      var hovBg  = props.danger ? '#b91c1c'    : props.secondary ? theme.border  : theme.accentHover;
+      return e('button', {
+        onClick: props.onClick,
+        disabled: props.disabled,
+        onMouseEnter: function(){ setHov(true); },
+        onMouseLeave: function(){ setHov(false); },
+        style: Object.assign({
+          background: isHov ? hovBg : base,
+          color: props.secondary ? theme.text : '#fff',
+          border: props.secondary ? '1px solid '+theme.border : 'none',
+          padding: props.small ? '6px 14px' : '10px 22px',
+          borderRadius:10, cursor: props.disabled ? 'not-allowed' : 'pointer',
+          fontSize: props.small ? 13 : 14, fontWeight:600, transition:'all 0.2s ease',
+          display:'inline-flex', alignItems:'center', gap:8,
+          opacity: props.disabled ? 0.5 : 1,
+          fontFamily:"'Inter',system-ui,sans-serif",
+        }, props.style || {})
+      }, props.children);
     }
 
     // ============================================================
-    // MONTH INPUT — fallback for iOS/Safari
+    // INPUT
     // ============================================================
-    const supportsMonthInput = (() => {
-      const i = document.createElement('input');
-      i.setAttribute('type', 'month');
+    function Input(props) {
+      var theme = useContext(ThemeContext);
+      return e('div', { style:{ marginBottom:14 } },
+        props.label && e('label', { style:{ display:'block', color:theme.textSecondary, fontSize:12, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 } }, props.label),
+        e('input', {
+          type: props.type || 'text',
+          value: props.value,
+          onChange: function(ev) { props.onChange(ev.target.value); },
+          placeholder: props.placeholder,
+          style: Object.assign({
+            width:'100%', boxSizing:'border-box', padding:'10px 14px', borderRadius:10,
+            border:'1px solid '+theme.border, background:theme.inputBg, color:theme.text,
+            fontSize:14, outline:'none', transition:'border-color 0.2s ease',
+            fontFamily: props.mono ? "'SFMono-Regular',ui-monospace,monospace" : "'Inter',system-ui,sans-serif",
+          }, props.style || {}),
+          onFocus: function(ev){ ev.target.style.borderColor = theme.accent; },
+          onBlur:  function(ev){ ev.target.style.borderColor = theme.border; },
+        })
+      );
+    }
+
+    // ============================================================
+    // MONTH INPUT
+    // ============================================================
+    var supportsMonthInput = (function() {
+      var i = document.createElement('input');
+      i.setAttribute('type','month');
       return i.type === 'month';
     })();
 
-    function MonthInput({ label, value, onChange, style: sx }) {
-      const theme = useContext(ThemeContext);
+    function MonthInput(props) {
+      var theme = useContext(ThemeContext);
       if (supportsMonthInput) {
-        return <Input label={label} value={value} onChange={onChange} type="month" style={sx} />;
+        return e(Input, { label:props.label, value:props.value, onChange:props.onChange, type:'month', style:props.style });
       }
-      const currentYear = new Date().getFullYear();
-      const years = [];
-      for (let y = currentYear - 2; y <= currentYear + 2; y++) years.push(y);
-      const parts = value ? value.split("-") : [String(currentYear), String(new Date().getMonth() + 1).padStart(2, "0")];
-      const selYear = Number(parts[0]);
-      const selMonth = Number(parts[1]);
-      const selStyle = {
-        padding: "10px 14px", borderRadius: 10,
-        border: `1px solid ${theme.border}`, background: theme.inputBg, color: theme.text,
-        fontSize: 14, outline: "none", fontFamily: "'Inter', system-ui, sans-serif",
-      };
-      return (
-        <div style={{ marginBottom: 14, ...sx }}>
-          {label && <label style={{ display: "block", color: theme.textSecondary, fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>}
-          <div style={{ display: "flex", gap: 8 }}>
-            <select value={selMonth} onChange={e => onChange(`${String(selYear)}-${String(Number(e.target.value)).padStart(2, "0")}`)} style={{ ...selStyle, flex: 1 }}>
-              {monthNames.map((name, i) => <option key={i + 1} value={i + 1}>{name}</option>)}
-            </select>
-            <select value={selYear} onChange={e => onChange(`${e.target.value}-${String(selMonth).padStart(2, "0")}`)} style={{ ...selStyle, width: 90 }}>
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
-        </div>
-      );
-    }
-
-    function Select({ label, value, onChange, options }) {
-      const theme = useContext(ThemeContext);
-      return (
-        <div style={{ marginBottom: 14 }}>
-          {label && <label style={{ display: "block", color: theme.textSecondary, fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>}
-          <select value={value} onChange={e => onChange(e.target.value)} style={{
-            width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${theme.border}`,
-            background: theme.inputBg, color: theme.text, fontSize: 14, outline: "none",
-            fontFamily: "'Inter', system-ui, sans-serif",
-          }}>
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </div>
-      );
-    }
-
-    function Card({ children, style: sx }) {
-      const theme = useContext(ThemeContext);
-      return (
-        <div style={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 16, padding: 24, ...sx }}>{children}</div>
-      );
-    }
-
-    function StatCard({ label, value, icon: Icon, accent }) {
-      const theme = useContext(ThemeContext);
-      return (
-        <div style={{
-          background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 14,
-          padding: "18px 20px", display: "flex", alignItems: "center", gap: 14, minWidth: 0,
-        }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 12,
-            background: (accent || theme.accent) + "18",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          }}>
-            <Icon size={20} color={accent || theme.accent} />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: theme.textSecondary, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 2 }}>{label}</div>
-            <div style={{ color: theme.text, fontSize: 18, fontWeight: 700, fontFamily: "'SFMono-Regular', ui-monospace, monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
-          </div>
-        </div>
+      var currentYear = new Date().getFullYear();
+      var years = [];
+      for (var y = currentYear-2; y <= currentYear+2; y++) years.push(y);
+      var parts = props.value ? props.value.split('-') : [String(currentYear), String(new Date().getMonth()+1).padStart(2,'0')];
+      var selYear  = Number(parts[0]);
+      var selMonth = Number(parts[1]);
+      var selStyle = { padding:'10px 14px', borderRadius:10, border:'1px solid '+theme.border, background:theme.inputBg, color:theme.text, fontSize:14, outline:'none', fontFamily:"'Inter',system-ui,sans-serif" };
+      return e('div', { style: Object.assign({ marginBottom:14 }, props.style||{}) },
+        props.label && e('label', { style:{ display:'block', color:theme.textSecondary, fontSize:12, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 } }, props.label),
+        e('div', { style:{ display:'flex', gap:8 } },
+          e('select', { value:selMonth, onChange:function(ev){ props.onChange(String(selYear)+'-'+String(Number(ev.target.value)).padStart(2,'0')); }, style:Object.assign({},selStyle,{flex:1}) },
+            monthNames.map(function(name,i){ return e('option',{key:i+1,value:i+1},name); })
+          ),
+          e('select', { value:selYear, onChange:function(ev){ props.onChange(ev.target.value+'-'+String(selMonth).padStart(2,'0')); }, style:Object.assign({},selStyle,{width:90}) },
+            years.map(function(y){ return e('option',{key:y,value:y},y); })
+          )
+        )
       );
     }
 
     // ============================================================
-    // DETAILED HONDA XR 125 SVG
+    // SELECT
     // ============================================================
-    function MotoProgress({ percent, theme }) {
-      const fill = theme.accent;
-      const stroke = theme.textSecondary;
-      const motoId = useId();
-      const animRef = useRef(0);
-      const [animatedPercent, setAnimatedPercent] = useState(0);
-      useEffect(() => {
-        let rafId;
-        const animate = () => {
-          const current = animRef.current;
-          const diff = percent - current;
-          if (Math.abs(diff) <= 0.5) {
-            animRef.current = percent;
-            setAnimatedPercent(percent);
-            return;
-          }
+    function Select(props) {
+      var theme = useContext(ThemeContext);
+      return e('div', { style:{ marginBottom:14 } },
+        props.label && e('label', { style:{ display:'block', color:theme.textSecondary, fontSize:12, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 } }, props.label),
+        e('select', {
+          value: props.value,
+          onChange: function(ev){ props.onChange(ev.target.value); },
+          style: { width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid '+theme.border, background:theme.inputBg, color:theme.text, fontSize:14, outline:'none', fontFamily:"'Inter',system-ui,sans-serif" }
+        }, props.options.map(function(o){ return e('option',{key:o.value,value:o.value},o.label); }))
+      );
+    }
+
+    // ============================================================
+    // CARD / STATCARD
+    // ============================================================
+    function Card(props) {
+      var theme = useContext(ThemeContext);
+      return e('div', { style:Object.assign({ background:theme.surface, border:'1px solid '+theme.border, borderRadius:16, padding:24 }, props.style||{}) }, props.children);
+    }
+
+    function StatCard(props) {
+      var theme = useContext(ThemeContext);
+      var accent = props.accent || theme.accent;
+      return e('div', { style:{ background:theme.surface, border:'1px solid '+theme.border, borderRadius:14, padding:'18px 20px', display:'flex', alignItems:'center', gap:14, minWidth:0 } },
+        e('div', { style:{ width:42, height:42, borderRadius:12, background:accent+'18', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 } },
+          e(props.icon, { size:20, color:accent })
+        ),
+        e('div', { style:{ minWidth:0 } },
+          e('div', { style:{ color:theme.textSecondary, fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:0.6, marginBottom:2 } }, props.label),
+          e('div', { style:{ color:theme.text, fontSize:18, fontWeight:700, fontFamily:"'SFMono-Regular',ui-monospace,monospace", whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' } }, props.value)
+        )
+      );
+    }
+
+    // ============================================================
+    // MOTO PROGRESS SVG
+    // ============================================================
+    function MotoProgress(props) {
+      var percent = props.percent;
+      var theme   = props.theme;
+      var fill    = theme.accent;
+      var stroke  = theme.textSecondary;
+      var motoId  = useId();
+      var animRef = useRef(0);
+      var animState = useState(0);
+      var animatedPercent = animState[0], setAnimatedPercent = animState[1];
+
+      useEffect(function() {
+        var rafId;
+        function animate() {
+          var current = animRef.current;
+          var diff = percent - current;
+          if (Math.abs(diff) <= 0.5) { animRef.current = percent; setAnimatedPercent(percent); return; }
           animRef.current = current + (diff > 0 ? 0.5 : -0.5);
           setAnimatedPercent(animRef.current);
           rafId = requestAnimationFrame(animate);
-        };
+        }
         rafId = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(rafId);
+        return function() { cancelAnimationFrame(rafId); };
       }, [percent]);
-      const spokeAngles = [0,30,60,90,120,150,180,210,240,270,300,330];
-      const Wheel = ({ cx, cy, r, prefix, color, opacity }) => (
-        <g>
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="3" opacity={opacity}/>
-          <circle cx={cx} cy={cy} r={r-8} fill="none" stroke={color} strokeWidth="1.5" opacity={opacity}/>
-          <circle cx={cx} cy={cy} r={r-14} fill="none" stroke={color} strokeWidth="0.5" opacity={opacity} strokeDasharray="2 3"/>
-          <circle cx={cx} cy={cy} r={6} fill={color} fillOpacity={opacity * 0.5} stroke={color} strokeWidth="1.5" opacity={opacity}/>
-          {spokeAngles.map(a => (
-            <line key={`${prefix}${a}`}
-              x1={cx + 8 * Math.cos(a * Math.PI/180)} y1={cy + 8 * Math.sin(a * Math.PI/180)}
-              x2={cx + (r-9) * Math.cos(a * Math.PI/180)} y2={cy + (r-9) * Math.sin(a * Math.PI/180)}
-              stroke={color} strokeWidth="0.8" opacity={opacity}/>
-          ))}
-        </g>
-      );
-      const BodyPaths = ({ color, opacity, fillOpacity }) => (
-        <g fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity={opacity}>
-          <path d="M118 222 L178 168 L200 178"/>
-          <path d="M118 222 L160 195"/>
-          <path d="M155 190 L170 155" strokeWidth="3" strokeDasharray="4 3"/>
-          <path d="M178 168 L215 135 L260 108 L305 88 L335 95"/>
-          <path d="M260 108 L245 145 L230 170 L220 185"/>
-          <path d="M215 135 L180 140 L150 155 L135 168"/>
-          <path d="M180 140 L178 168"/>
-          <path d="M220 148 L238 140 L258 140 L268 150 L268 172 L258 182 L232 182 L220 172 Z"
-            fill={color} fillOpacity={fillOpacity * 0.15} strokeWidth="2"/>
-          {[148, 154, 160, 166].map(yy => (
-            <line key={`fin${yy}`} x1="222" y1={yy} x2="215" y2={yy} strokeWidth="1.5"/>
-          ))}
-          <path d="M232 182 L235 195 L255 195 L258 182" fill={color} fillOpacity={fillOpacity * 0.1}/>
-          <path d="M258 172 L275 180 L280 195 L270 208" strokeWidth="2"/>
-          <path d="M270 208 L245 218 L200 228 L155 232 L128 234" strokeWidth="3.5" strokeLinecap="round"/>
-          <ellipse cx="125" cy="234" rx="8" ry="5" fill={color} fillOpacity={fillOpacity * 0.2} strokeWidth="1.5"/>
-          <path d="M255 98 C260 80 285 70 318 72 L332 80 L335 95 L320 108 L280 112 L260 108 Z"
-            fill={color} fillOpacity={fillOpacity * 0.25} strokeWidth="2"/>
-          <path d="M275 95 L285 88" strokeWidth="1" opacity={opacity * 0.6}/>
-          <path d="M280 100 L290 93" strokeWidth="1" opacity={opacity * 0.6}/>
-          <path d="M205 128 L225 118 L260 108 L280 112 L268 120 L238 128 L215 135 Z"
-            fill={color} fillOpacity={fillOpacity * 0.12} strokeWidth="1.8"/>
-          <path d="M150 155 L180 140 L205 128 L195 135 L165 148 Z"
-            fill={color} fillOpacity={fillOpacity * 0.1} strokeWidth="1.5"/>
-          <rect x="132" y="158" width="10" height="4" rx="2" fill={fill} fillOpacity={fillOpacity * 0.8} stroke={color} strokeWidth="1"/>
-          <path d="M115 198 C98 185 95 165 108 150 L135 155 L140 168 L130 188"
-            fill={color} fillOpacity={fillOpacity * 0.06} strokeWidth="1.8"/>
-          <path d="M368 178 C380 158 398 155 402 170 L398 185 L382 192 L370 188"
-            fill={color} fillOpacity={fillOpacity * 0.06} strokeWidth="1.8"/>
-          <path d="M335 95 L350 82 L358 72" strokeWidth="2.5"/>
-          <path d="M342 100 L365 185 L378 222" strokeWidth="2"/>
-          <path d="M348 95 L372 182 L382 218" strokeWidth="2"/>
-          <path d="M350 110 L358 108" strokeWidth="3"/>
-          <ellipse cx="352" cy="85" rx="8" ry="3" fill="none" strokeWidth="1.5"/>
-          <path d="M340 68 L352 72 L365 68" strokeWidth="2.5"/>
-          <path d="M338 70 L340 68" strokeWidth="2"/>
-          <path d="M365 68 L368 66" strokeWidth="2"/>
-          <path d="M335 66 C330 60 332 55 340 54 L345 58" strokeWidth="1.2" fill="none"/>
-          <path d="M370 64 C375 58 373 53 365 52 L360 56" strokeWidth="1.2" fill="none"/>
-          <circle cx="372" cy="88" r="14" fill={color} fillOpacity={fillOpacity * 0.15} strokeWidth="2"/>
-          <circle cx="372" cy="88" r="10" fill={color} fillOpacity={fillOpacity * 0.08} strokeWidth="1"/>
-          <circle cx="372" cy="88" r="4" fill={color} fillOpacity={fillOpacity * 0.3}/>
-          <path d="M356 72 L372 65 L390 72 L388 95 L372 102 L356 95 Z"
-            fill={color} fillOpacity={fillOpacity * 0.06} strokeWidth="1.2"/>
-          <path d="M118 222 L245 190" strokeWidth="1.2" strokeDasharray="3 2" opacity={opacity * 0.5}/>
-          <circle cx="245" cy="190" r="5" fill={color} fillOpacity={fillOpacity * 0.2} strokeWidth="1"/>
-          <circle cx="118" cy="222" r="12" fill="none" strokeWidth="1" opacity={opacity * 0.4}/>
-          <line x1="228" y1="195" x2="240" y2="258" strokeWidth="2.5" opacity={opacity * 0.5}/>
-          <line x1="235" y1="195" x2="248" y2="198" strokeWidth="2.5" opacity={opacity * 0.5}/>
-        </g>
-      );
-      return (
-        <div style={{ position: "relative", width: "100%", maxWidth: 440, margin: "0 auto" }}>
-          <svg viewBox="0 0 500 280" style={{ width: "100%", height: "auto" }}>
-            <defs>
-              <clipPath id={motoId}>
-                <rect x="0" y={280 - (280 * animatedPercent / 100)} width="500" height={280 * animatedPercent / 100} />
-              </clipPath>
-            </defs>
-            <ellipse cx="250" cy="262" rx="180" ry="10" fill={fill} opacity="0.12" />
-            <Wheel cx={118} cy={222} r={46} prefix="rg" color={stroke} opacity={0.3}/>
-            <Wheel cx={382} cy={222} r={46} prefix="fg" color={stroke} opacity={0.3}/>
-            <BodyPaths color={stroke} opacity={0.3} fillOpacity={0}/>
-            <g clipPath={`url(#${motoId})`}>
-              <Wheel cx={118} cy={222} r={46} prefix="rf" color={fill} opacity={1}/>
-              <Wheel cx={382} cy={222} r={46} prefix="ff" color={fill} opacity={1}/>
-              <BodyPaths color={fill} opacity={1} fillOpacity={1}/>
-            </g>
-          </svg>
-        </div>
+
+      var spokeAngles = [0,30,60,90,120,150,180,210,240,270,300,330];
+
+      function Wheel(wp) {
+        var cx=wp.cx,cy=wp.cy,r=wp.r,prefix=wp.prefix,color=wp.color,opacity=wp.opacity;
+        return e('g', null,
+          e('circle',{cx:cx,cy:cy,r:r,fill:'none',stroke:color,strokeWidth:3,opacity:opacity}),
+          e('circle',{cx:cx,cy:cy,r:r-8,fill:'none',stroke:color,strokeWidth:1.5,opacity:opacity}),
+          e('circle',{cx:cx,cy:cy,r:r-14,fill:'none',stroke:color,strokeWidth:0.5,opacity:opacity,strokeDasharray:'2 3'}),
+          e('circle',{cx:cx,cy:cy,r:6,fill:color,fillOpacity:opacity*0.5,stroke:color,strokeWidth:1.5,opacity:opacity}),
+          spokeAngles.map(function(a) {
+            return e('line',{key:prefix+a,x1:cx+8*Math.cos(a*Math.PI/180),y1:cy+8*Math.sin(a*Math.PI/180),x2:cx+(r-9)*Math.cos(a*Math.PI/180),y2:cy+(r-9)*Math.sin(a*Math.PI/180),stroke:color,strokeWidth:0.8,opacity:opacity});
+          })
+        );
+      }
+
+      function BodyPaths(bp) {
+        var color=bp.color,opacity=bp.opacity,fillOpacity=bp.fillOpacity;
+        return e('g',{fill:'none',stroke:color,strokeWidth:2.2,strokeLinecap:'round',strokeLinejoin:'round',opacity:opacity},
+          e('path',{d:'M118 222 L178 168 L200 178'}),
+          e('path',{d:'M118 222 L160 195'}),
+          e('path',{d:'M155 190 L170 155',strokeWidth:3,strokeDasharray:'4 3'}),
+          e('path',{d:'M178 168 L215 135 L260 108 L305 88 L335 95'}),
+          e('path',{d:'M260 108 L245 145 L230 170 L220 185'}),
+          e('path',{d:'M215 135 L180 140 L150 155 L135 168'}),
+          e('path',{d:'M180 140 L178 168'}),
+          e('path',{d:'M220 148 L238 140 L258 140 L268 150 L268 172 L258 182 L232 182 L220 172 Z',fill:color,fillOpacity:fillOpacity*0.15,strokeWidth:2}),
+          [148,154,160,166].map(function(yy){ return e('line',{key:'fin'+yy,x1:222,y1:yy,x2:215,y2:yy,strokeWidth:1.5}); }),
+          e('path',{d:'M232 182 L235 195 L255 195 L258 182',fill:color,fillOpacity:fillOpacity*0.1}),
+          e('path',{d:'M258 172 L275 180 L280 195 L270 208',strokeWidth:2}),
+          e('path',{d:'M270 208 L245 218 L200 228 L155 232 L128 234',strokeWidth:3.5,strokeLinecap:'round'}),
+          e('ellipse',{cx:125,cy:234,rx:8,ry:5,fill:color,fillOpacity:fillOpacity*0.2,strokeWidth:1.5}),
+          e('path',{d:'M255 98 C260 80 285 70 318 72 L332 80 L335 95 L320 108 L280 112 L260 108 Z',fill:color,fillOpacity:fillOpacity*0.25,strokeWidth:2}),
+          e('path',{d:'M205 128 L225 118 L260 108 L280 112 L268 120 L238 128 L215 135 Z',fill:color,fillOpacity:fillOpacity*0.12,strokeWidth:1.8}),
+          e('path',{d:'M150 155 L180 140 L205 128 L195 135 L165 148 Z',fill:color,fillOpacity:fillOpacity*0.1,strokeWidth:1.5}),
+          e('rect',{x:132,y:158,width:10,height:4,rx:2,fill:fill,fillOpacity:fillOpacity*0.8,stroke:color,strokeWidth:1}),
+          e('path',{d:'M335 95 L350 82 L358 72',strokeWidth:2.5}),
+          e('path',{d:'M342 100 L365 185 L378 222',strokeWidth:2}),
+          e('path',{d:'M348 95 L372 182 L382 218',strokeWidth:2}),
+          e('circle',{cx:372,cy:88,r:14,fill:color,fillOpacity:fillOpacity*0.15,strokeWidth:2}),
+          e('circle',{cx:372,cy:88,r:4,fill:color,fillOpacity:fillOpacity*0.3}),
+          e('path',{d:'M340 68 L352 72 L365 68',strokeWidth:2.5}),
+          e('path',{d:'M118 222 L245 190',strokeWidth:1.2,strokeDasharray:'3 2',opacity:opacity*0.5}),
+          e('line',{x1:228,y1:195,x2:240,y2:258,strokeWidth:2.5,opacity:opacity*0.5})
+        );
+      }
+
+      var clipId = 'clip-'+motoId;
+      return e('div',{ style:{ position:'relative', width:'100%', maxWidth:440, margin:'0 auto' } },
+        e('svg',{ viewBox:'0 0 500 280', style:{ width:'100%', height:'auto' } },
+          e('defs',null,
+            e('clipPath',{ id:clipId },
+              e('rect',{ x:0, y:280-(280*animatedPercent/100), width:500, height:280*animatedPercent/100 })
+            )
+          ),
+          e('ellipse',{ cx:250, cy:262, rx:180, ry:10, fill:fill, opacity:0.12 }),
+          e(Wheel,{ cx:118, cy:222, r:46, prefix:'rg', color:stroke, opacity:0.3 }),
+          e(Wheel,{ cx:382, cy:222, r:46, prefix:'fg', color:stroke, opacity:0.3 }),
+          e(BodyPaths,{ color:stroke, opacity:0.3, fillOpacity:0 }),
+          e('g',{ clipPath:'url(#'+clipId+')' },
+            e(Wheel,{ cx:118, cy:222, r:46, prefix:'rf', color:fill, opacity:1 }),
+            e(Wheel,{ cx:382, cy:222, r:46, prefix:'ff', color:fill, opacity:1 }),
+            e(BodyPaths,{ color:fill, opacity:1, fillOpacity:1 })
+          )
+        )
       );
     }
 
     // ============================================================
-    // COMPROBANTE PREVIEW MODAL
+    // COMPROBANTE PREVIEW
     // ============================================================
-    function ComprobantePreview({ data, nombre, onClose }) {
-      const theme = useContext(ThemeContext);
-      if (!data) return null;
-      const isImage = data.startsWith("data:image");
-      return (
-        <Modal open={true} onClose={onClose} title={nombre || "Comprobante"} wide>
-          <div style={{ textAlign: "center" }}>
-            {isImage ? (
-              <img src={data} alt="Comprobante" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, border: `1px solid ${theme.border}` }} />
-            ) : (
-              <div style={{ padding: 40, color: theme.textSecondary }}>
-                <Download size={48} style={{ marginBottom: 12, opacity: 0.4 }} />
-                <p style={{ margin: "0 0 16px" }}>Archivo PDF — descargalo para verlo.</p>
-              </div>
-            )}
-            <div style={{ marginTop: 16, display: "flex", gap: 12, justifyContent: "center" }}>
-              <a href={data} download={nombre || "comprobante"} style={{ textDecoration: "none" }}>
-                <Btn secondary small><Download size={14} /> Descargar</Btn>
-              </a>
-              <Btn secondary small onClick={onClose}>Cerrar</Btn>
-            </div>
-          </div>
-        </Modal>
+    function ComprobantePreview(props) {
+      var theme = useContext(ThemeContext);
+      if (!props.data) return null;
+      var isImage = props.data.startsWith('data:image');
+      return e(Modal, { open:true, onClose:props.onClose, title:props.nombre||'Comprobante', wide:true },
+        e('div', { style:{ textAlign:'center' } },
+          isImage
+            ? e('img',{ src:props.data, alt:'Comprobante', style:{ maxWidth:'100%', maxHeight:'60vh', borderRadius:12, border:'1px solid '+theme.border } })
+            : e('div',{ style:{ padding:40, color:theme.textSecondary } },
+                e(Download,{size:48,style:{marginBottom:12,opacity:0.4}}),
+                e('p',{style:{margin:'0 0 16px'}},'Archivo PDF — descargalo para verlo.')
+              ),
+          e('div',{ style:{ marginTop:16, display:'flex', gap:12, justifyContent:'center' } },
+            e('a',{ href:props.data, download:props.nombre||'comprobante', style:{ textDecoration:'none' } },
+              e(Btn,{ secondary:true, small:true }, e(Download,{size:14}), ' Descargar')
+            ),
+            e(Btn,{ secondary:true, small:true, onClick:props.onClose },'Cerrar')
+          )
+        )
       );
     }
 
     // ============================================================
-    // EDIT HISTORY VIEWER
+    // HISTORY MODAL
     // ============================================================
-    function HistoryModal({ historial, onClose }) {
-      const theme = useContext(ThemeContext);
-      return (
-        <Modal open={true} onClose={onClose} title="Historial de Ediciones">
-          {(!historial || historial.length === 0) ? (
-            <p style={{ color: theme.textSecondary, textAlign: "center", padding: 20 }}>Sin ediciones registradas.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {historial.map((h, i) => (
-                <div key={i} style={{ padding: "10px 14px", background: theme.bg, borderRadius: 10, border: `1px solid ${theme.border}` }}>
-                  <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 4 }}>
-                    {new Date(h.timestamp).toLocaleString("es-AR")}
-                  </div>
-                  <div style={{ fontSize: 13, color: theme.text }}>{h.descripcion}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Modal>
+    function HistoryModal(props) {
+      var theme = useContext(ThemeContext);
+      var historial = props.historial;
+      return e(Modal,{ open:true, onClose:props.onClose, title:'Historial de Ediciones' },
+        (!historial || historial.length===0)
+          ? e('p',{ style:{ color:theme.textSecondary, textAlign:'center', padding:20 } },'Sin ediciones registradas.')
+          : e('div',{ style:{ display:'flex', flexDirection:'column', gap:8 } },
+              historial.map(function(h,i){
+                return e('div',{ key:i, style:{ padding:'10px 14px', background:theme.bg, borderRadius:10, border:'1px solid '+theme.border } },
+                  e('div',{ style:{ fontSize:11, color:theme.textSecondary, marginBottom:4 } }, new Date(h.timestamp).toLocaleString('es-AR')),
+                  e('div',{ style:{ fontSize:13, color:theme.text } }, h.descripcion)
+                );
+              })
+            )
       );
     }
 
     // ============================================================
-    // VENCIMIENTO ALERT BANNER
+    // VENCIMIENTO ALERT
     // ============================================================
-    function VencimientoAlert({ vencimientos, nombre }) {
-      const theme = useContext(ThemeContext);
-      if (!vencimientos) return null;
-      const alertas = Object.entries(vencimientos)
-        .map(([mes, fecha]) => ({ mes, fecha, dias: daysUntil(fecha) }))
-        .filter(a => a.dias >= 0 && a.dias <= 7)
-        .sort((a, b) => a.dias - b.dias);
-      if (alertas.length === 0) return null;
-      return (
-        <div style={{
-          background: `${theme.warning}15`, border: `1px solid ${theme.warning}40`,
-          borderRadius: 14, padding: "14px 20px", marginBottom: 20,
-          display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap",
-        }}>
-          <AlertTriangle size={22} color={theme.warning} style={{ flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 200 }}>
-            {alertas.map(a => {
-              const [y, m] = a.mes.split("-").map(Number);
-              return (
-                <div key={a.mes} style={{ fontSize: 14, color: theme.text, marginBottom: 2 }}>
-                  <strong style={{ color: theme.warning }}>
-                    {a.dias === 0 ? "¡Vence HOY!" : a.dias === 1 ? "Vence MAÑANA" : `Vence en ${a.dias} días`}
-                  </strong>
-                  {" — "}{nombre}, {monthNames[m - 1]} {y} ({a.fecha})
-                </div>
-              );
-            })}
-          </div>
-        </div>
+    function VencimientoAlert(props) {
+      var theme = useContext(ThemeContext);
+      if (!props.vencimientos) return null;
+      var alertas = Object.entries(props.vencimientos)
+        .map(function(kv){ return { mes:kv[0], fecha:kv[1], dias:daysUntil(kv[1]) }; })
+        .filter(function(a){ return a.dias>=0 && a.dias<=7; })
+        .sort(function(a,b){ return a.dias-b.dias; });
+      if (!alertas.length) return null;
+      return e('div',{ style:{ background:theme.warning+'15', border:'1px solid '+theme.warning+'40', borderRadius:14, padding:'14px 20px', marginBottom:20, display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' } },
+        e(AlertTriangle,{ size:22, color:theme.warning, style:{ flexShrink:0 } }),
+        e('div',{ style:{ flex:1, minWidth:200 } },
+          alertas.map(function(a){
+            var parts = a.mes.split('-').map(Number);
+            var y=parts[0],m=parts[1];
+            var label = a.dias===0 ? '¡Vence HOY!' : a.dias===1 ? 'Vence MAÑANA' : 'Vence en '+a.dias+' días';
+            return e('div',{ key:a.mes, style:{ fontSize:14, color:theme.text, marginBottom:2 } },
+              e('strong',{ style:{ color:theme.warning } }, label),
+              ' — '+props.nombre+', '+monthNames[m-1]+' '+y+' ('+a.fecha+')'
+            );
+          })
+        )
       );
     }
 
@@ -573,806 +590,179 @@
     // MODULE 1 — PRÉSTAMO PERSONAL
     // ============================================================
     function PrestamoModule() {
-      const theme = useContext(ThemeContext);
-      const toast = useContext(ToastContext);
-      const { quickPayOpen, setQuickPayOpen } = useContext(QuickPayContext);
-      const [confirm, ConfirmDialog] = useConfirm();
-      const gradientId = useId();
-      const [data, setData] = useState(() => load("deudatracker_prestamo", defaultPrestamo));
-      const [showModal, setShowModal] = useState(false);
-      const [editIdx, setEditIdx] = useState(null);
-      const [editingAcreedor, setEditingAcreedor] = useState(false);
-      const [editingMonto, setEditingMonto] = useState(false);
-      const [previewComp, setPreviewComp] = useState(null);
-      const [showHistory, setShowHistory] = useState(null);
-      const [form, setForm] = useState({ fecha: todayStr(), monto: "", metodo: "efectivo", comprobante: null, comprobanteNombre: "", notas: "" });
-      const fileRef = useRef();
+      var theme   = useContext(ThemeContext);
+      var toast   = useContext(ToastContext);
+      var qpCtx   = useContext(QuickPayContext);
+      var quickPayOpen = qpCtx.quickPayOpen, setQuickPayOpen = qpCtx.setQuickPayOpen;
+      var cd      = useConfirm(); var confirm = cd[0]; var ConfirmDialog = cd[1];
+      var gradientId = useId();
+      var ds = useState(function(){ return load('deudatracker_prestamo', defaultPrestamo); });
+      var data = ds[0], setData = ds[1];
+      var sm = useState(false); var showModal=sm[0],setShowModal=sm[1];
+      var ei = useState(null); var editIdx=ei[0],setEditIdx=ei[1];
+      var ea = useState(false); var editingAcreedor=ea[0],setEditingAcreedor=ea[1];
+      var em = useState(false); var editingMonto=em[0],setEditingMonto=em[1];
+      var pc = useState(null); var previewComp=pc[0],setPreviewComp=pc[1];
+      var sh = useState(null); var showHistory=sh[0],setShowHistory=sh[1];
+      var fs = useState({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobante:null, comprobanteNombre:'', notas:'' });
+      var form=fs[0],setForm=fs[1];
+      var fileRef = useRef();
 
-      useEffect(() => { save("deudatracker_prestamo", data); }, [data]);
+      useEffect(function(){ save('deudatracker_prestamo', data); }, [data]);
 
-      const totalPagado = data.pagos.reduce((s, p) => s + p.monto, 0);
-      const saldo = Math.max(0, data.montoTotal - totalPagado);
-      const percent = data.montoTotal > 0 ? Math.min(100, (totalPagado / data.montoTotal) * 100) : 0;
-      const promedio = data.pagos.length > 0 ? totalPagado / data.pagos.length : 0;
-      const maxCuota = data.pagos.length > 0 ? Math.max(...data.pagos.map(p => p.monto)) : 0;
-      const minCuota = data.pagos.length > 0 ? Math.min(...data.pagos.map(p => p.monto)) : 0;
-      const last3 = data.pagos.slice(-3);
-      const promLast3 = last3.length > 0 ? last3.reduce((s, p) => s + p.monto, 0) / last3.length : 0;
-      const mesesRestantes = promLast3 > 0 ? Math.ceil(saldo / promLast3) : null;
+      var totalPagado   = data.pagos.reduce(function(s,p){ return s+p.monto; },0);
+      var saldo         = Math.max(0, data.montoTotal - totalPagado);
+      var percent       = data.montoTotal>0 ? Math.min(100,(totalPagado/data.montoTotal)*100) : 0;
+      var promedio      = data.pagos.length>0 ? totalPagado/data.pagos.length : 0;
+      var maxCuota      = data.pagos.length>0 ? Math.max.apply(null,data.pagos.map(function(p){return p.monto;})) : 0;
+      var minCuota      = data.pagos.length>0 ? Math.min.apply(null,data.pagos.map(function(p){return p.monto;})) : 0;
+      var last3         = data.pagos.slice(-3);
+      var promLast3     = last3.length>0 ? last3.reduce(function(s,p){return s+p.monto;},0)/last3.length : 0;
+      var mesesRestantes= promLast3>0 ? Math.ceil(saldo/promLast3) : null;
 
-      const rachaCount = useMemo(() => {
-        if (data.pagos.length === 0) return 0;
-        const uniqueMonths = [...new Set(data.pagos.map(p => p.fecha.slice(0, 7)))].sort().reverse();
-        if (uniqueMonths.length === 0) return 0;
-        let count = 1;
-        for (let i = 0; i < uniqueMonths.length - 1; i++) {
-          const [y1, m1] = uniqueMonths[i].split("-").map(Number);
-          const [y2, m2] = uniqueMonths[i + 1].split("-").map(Number);
-          if ((y1 * 12 + m1) - (y2 * 12 + m2) === 1) count++;
-          else break;
+      var rachaCount = useMemo(function(){
+        if (!data.pagos.length) return 0;
+        var um = Array.from(new Set(data.pagos.map(function(p){return p.fecha.slice(0,7);}))).sort().reverse();
+        if (!um.length) return 0;
+        var count=1;
+        for (var i=0;i<um.length-1;i++){
+          var p1=um[i].split('-').map(Number); var p2=um[i+1].split('-').map(Number);
+          if ((p1[0]*12+p1[1])-(p2[0]*12+p2[1])===1) count++; else break;
         }
         return count;
       }, [data.pagos]);
 
-      useEffect(() => {
-        if (quickPayOpen) {
-          setForm({ fecha: todayStr(), monto: "", metodo: "efectivo", comprobante: null, comprobanteNombre: "", notas: "" });
-          setEditIdx(null);
-          setShowModal(true);
-          setQuickPayOpen(false);
+      useEffect(function(){
+        if (quickPayOpen){
+          setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobante:null, comprobanteNombre:'', notas:'' });
+          setEditIdx(null); setShowModal(true); setQuickPayOpen(false);
         }
-      }, [quickPayOpen, setQuickPayOpen]);
+      }, [quickPayOpen]);
 
-      const resetForm = () => setForm({ fecha: todayStr(), monto: "", metodo: "efectivo", comprobante: null, comprobanteNombre: "", notas: "" });
-      const openAdd = () => { resetForm(); setEditIdx(null); setShowModal(true); };
-      const openEdit = (i) => {
-        const p = data.pagos[i];
-        setForm({ fecha: p.fecha, monto: String(p.monto), metodo: p.metodo, comprobante: p.comprobante || null, comprobanteNombre: p.comprobanteNombre || "", notas: p.notas || "" });
+      function resetForm(){ setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobante:null, comprobanteNombre:'', notas:'' }); }
+      function openAdd(){ resetForm(); setEditIdx(null); setShowModal(true); }
+      function openEdit(i){
+        var p=data.pagos[i];
+        setForm({ fecha:p.fecha, monto:String(p.monto), metodo:p.metodo, comprobante:p.comprobante||null, comprobanteNombre:p.comprobanteNombre||'', notas:p.notas||'' });
         setEditIdx(i); setShowModal(true);
-      };
+      }
 
-      const handleFile = (e) => {
-        const file = e.target.files?.[0];
+      function handleFile(ev){
+        var file=ev.target.files && ev.target.files[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { toast("Archivo demasiado grande (máx 5MB)", "error"); return; }
-        const reader = new FileReader();
-        reader.onload = () => setForm(f => ({ ...f, comprobante: reader.result, comprobanteNombre: file.name }));
+        if (file.size>5*1024*1024){ toast('Archivo demasiado grande (máx 5MB)','error'); return; }
+        var reader=new FileReader();
+        reader.onload=function(){ setForm(function(f){ return Object.assign({},f,{ comprobante:reader.result, comprobanteNombre:file.name }); }); };
         reader.readAsDataURL(file);
-      };
+      }
 
-      const savePago = () => {
-        const monto = parseArgNum(form.monto);
-        if (!monto || monto <= 0) { toast("Ingresá un monto válido", "error"); return; }
-        if (!form.fecha) { toast("Seleccioná una fecha", "error"); return; }
-        const now = new Date().toISOString();
-        let pago;
-        if (editIdx !== null) {
-          const prev = data.pagos[editIdx];
-          const histEntry = { timestamp: now, descripcion: `Editado: monto ${fmt(prev.monto)} a ${fmt(monto)}, fecha ${prev.fecha} a ${form.fecha}, método ${prev.metodo} a ${form.metodo}` };
-          pago = { ...prev, fecha: form.fecha, monto, metodo: form.metodo, comprobante: form.comprobante, comprobanteNombre: form.comprobanteNombre, notas: form.notas, historial: [...(prev.historial || []), histEntry] };
+      function savePago(){
+        var monto=parseArgNum(form.monto);
+        if (!monto||monto<=0){ toast('Ingresá un monto válido','error'); return; }
+        if (!form.fecha){ toast('Seleccioná una fecha','error'); return; }
+        var now=new Date().toISOString(); var pago;
+        if (editIdx!==null){
+          var prev=data.pagos[editIdx];
+          var histEntry={ timestamp:now, descripcion:'Editado: monto '+fmt(prev.monto)+' a '+fmt(monto)+', fecha '+prev.fecha+' a '+form.fecha };
+          pago=Object.assign({},prev,{ fecha:form.fecha, monto:monto, metodo:form.metodo, comprobante:form.comprobante, comprobanteNombre:form.comprobanteNombre, notas:form.notas, historial:(prev.historial||[]).concat([histEntry]) });
         } else {
-          pago = { id: uid(), fecha: form.fecha, monto, metodo: form.metodo, comprobante: form.comprobante, comprobanteNombre: form.comprobanteNombre, notas: form.notas, historial: [{ timestamp: now, descripcion: `Creado: ${fmt(monto)} el ${form.fecha}` }] };
+          pago={ id:uid(), fecha:form.fecha, monto:monto, metodo:form.metodo, comprobante:form.comprobante, comprobanteNombre:form.comprobanteNombre, notas:form.notas, historial:[{ timestamp:now, descripcion:'Creado: '+fmt(monto)+' el '+form.fecha }] };
         }
-        const pagos = [...data.pagos];
-        if (editIdx !== null) pagos[editIdx] = pago; else pagos.push(pago);
-        pagos.sort((a, b) => a.fecha.localeCompare(b.fecha));
-        setData(d => ({ ...d, pagos }));
+        var pagos=data.pagos.slice();
+        if (editIdx!==null) pagos[editIdx]=pago; else pagos.push(pago);
+        pagos.sort(function(a,b){ return a.fecha.localeCompare(b.fecha); });
+        setData(function(d){ return Object.assign({},d,{ pagos:pagos }); });
         setShowModal(false);
-        toast(editIdx !== null ? "Pago actualizado" : "Pago registrado");
-      };
+        toast(editIdx!==null ? 'Pago actualizado' : 'Pago registrado');
+      }
 
-      const deletePago = async (i) => {
-        if (await confirm(`¿Eliminar el pago #${i + 1} de ${fmt(data.pagos[i].monto)}?`)) {
-          setData(d => ({ ...d, pagos: d.pagos.filter((_, j) => j !== i) }));
-          toast("Pago eliminado");
-        }
-      };
-
-      const exportResumen = () => {
-        let txt = `RESUMEN DE DEUDA — ${data.acreedor}\n`;
-        txt += `${"=".repeat(38)}\n`;
-        txt += `Monto total: ${fmt(data.montoTotal)}\n`;
-        txt += `Total pagado: ${fmt(totalPagado)}\n`;
-        txt += `Saldo restante: ${fmt(saldo)}\n`;
-        txt += `Progreso: ${percent.toFixed(1)}%\n`;
-        txt += `Cuotas pagadas: ${data.pagos.length}\n\n`;
-        txt += `DETALLE DE PAGOS:\n`;
-        data.pagos.forEach((p, i) => {
-          txt += `  ${i + 1}. ${p.fecha} — ${fmt(p.monto)} (${p.metodo})${p.notas ? ` — ${p.notas}` : ""}\n`;
+      function deletePago(i){
+        confirm('¿Eliminar el pago #'+(i+1)+' de '+fmt(data.pagos[i].monto)+'?').then(function(ok){
+          if (!ok) return;
+          setData(function(d){ return Object.assign({},d,{ pagos:d.pagos.filter(function(_,j){ return j!==i; }) }); });
+          toast('Pago eliminado');
         });
-        if (mesesRestantes && saldo > 0) txt += `\nProyeccion: ~${mesesRestantes} meses restantes\n`;
-        txt += `\nGenerado por DeudaTracker — ${new Date().toLocaleDateString("es-AR")}`;
-        navigator.clipboard.writeText(txt).then(() => toast("Resumen copiado al portapapeles")).catch(() => toast("Error al copiar", "error"));
-      };
+      }
 
-      const chartData = data.pagos.reduce((arr, p) => {
-        const prev = arr.length > 0 ? arr[arr.length - 1].saldo : data.montoTotal;
-        arr.push({ name: `#${arr.length}`, saldo: Math.max(0, prev - p.monto), pagado: p.monto });
+      function exportResumen(){
+        var txt='RESUMEN DE DEUDA — '+data.acreedor+'\n'+'='.repeat(38)+'\n';
+        txt+='Monto total: '+fmt(data.montoTotal)+'\nTotal pagado: '+fmt(totalPagado)+'\nSaldo restante: '+fmt(saldo)+'\nProgreso: '+percent.toFixed(1)+'%\nCuotas pagadas: '+data.pagos.length+'\n\nDETALLE DE PAGOS:\n';
+        data.pagos.forEach(function(p,i){ txt+='  '+(i+1)+'. '+p.fecha+' — '+fmt(p.monto)+' ('+p.metodo+')'+(p.notas?' — '+p.notas:'')+'\n'; });
+        if (mesesRestantes&&saldo>0) txt+='\nProyección: ~'+mesesRestantes+' meses restantes\n';
+        txt+='\nGenerado por DeudaTracker — '+new Date().toLocaleDateString('es-AR');
+        navigator.clipboard.writeText(txt).then(function(){ toast('Resumen copiado al portapapeles'); }).catch(function(){ toast('Error al copiar','error'); });
+      }
+
+      var chartData = data.pagos.reduce(function(arr,p){
+        var prev=arr.length>0?arr[arr.length-1].saldo:data.montoTotal;
+        arr.push({ name:'#'+arr.length, saldo:Math.max(0,prev-p.monto), pagado:p.monto });
         return arr;
-      }, [{ name: "Inicio", saldo: data.montoTotal, pagado: 0 }]);
+      }, [{ name:'Inicio', saldo:data.montoTotal, pagado:0 }]);
 
-      const metodos = [
-        { value: "efectivo", label: "Efectivo" }, { value: "transferencia", label: "Transferencia" },
-        { value: "mercadopago", label: "Mercado Pago" }, { value: "otro", label: "Otro" },
-      ];
+      var metodos=[{value:'efectivo',label:'Efectivo'},{value:'transferencia',label:'Transferencia'},{value:'mercadopago',label:'Mercado Pago'},{value:'otro',label:'Otro'}];
 
-      return (
-        <div>
-          <ConfirmDialog />
-          {previewComp && <ComprobantePreview data={previewComp.data} nombre={previewComp.nombre} onClose={() => setPreviewComp(null)} />}
-          {showHistory !== null && <HistoryModal historial={data.pagos[showHistory]?.historial} onClose={() => setShowHistory(null)} />}
+      return e('div',null,
+        e(ConfirmDialog,null),
+        previewComp && e(ComprobantePreview,{ data:previewComp.data, nombre:previewComp.nombre, onClose:function(){ setPreviewComp(null); } }),
+        showHistory!==null && e(HistoryModal,{ historial:data.pagos[showHistory]&&data.pagos[showHistory].historial, onClose:function(){ setShowHistory(null); } }),
 
-          <Card style={{ marginBottom: 20, position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 0, right: 0, width: 200, height: 200, background: `radial-gradient(circle at top right, ${theme.accent}10, transparent)`, pointerEvents: "none" }} />
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16, marginBottom: 16 }}>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ fontSize: 12, color: theme.textSecondary, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Acreedor</div>
-                {editingAcreedor ? (
-                  <input autoFocus value={data.acreedor} onChange={e => setData(d => ({ ...d, acreedor: e.target.value }))}
-                    onBlur={() => setEditingAcreedor(false)} onKeyDown={e => e.key === "Enter" && setEditingAcreedor(false)}
-                    style={{ background: theme.inputBg, border: `1px solid ${theme.accent}`, borderRadius: 8, padding: "6px 12px", color: theme.text, fontSize: 22, fontWeight: 700, outline: "none", width: 200 }} />
-                ) : (
-                  <div onClick={() => setEditingAcreedor(true)} style={{ cursor: "pointer", fontSize: 24, fontWeight: 700, color: theme.text, display: "flex", alignItems: "center", gap: 8 }}>
-                    {data.acreedor} <Edit3 size={14} color={theme.textSecondary} />
-                  </div>
-                )}
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: theme.textSecondary, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Monto Total</div>
-                {editingMonto ? (
-                  <input autoFocus value={data.montoTotal} onChange={e => setData(d => ({ ...d, montoTotal: parseArgNum(e.target.value) }))}
-                    onBlur={() => setEditingMonto(false)} onKeyDown={e => e.key === "Enter" && setEditingMonto(false)}
-                    style={{ background: theme.inputBg, border: `1px solid ${theme.accent}`, borderRadius: 8, padding: "6px 12px", color: theme.text, fontSize: 22, fontWeight: 700, outline: "none", width: 200, fontFamily: "'SFMono-Regular', ui-monospace, monospace" }} />
-                ) : (
-                  <div onClick={() => setEditingMonto(true)} style={{ cursor: "pointer", fontSize: 24, fontWeight: 700, color: theme.accent, fontFamily: "'SFMono-Regular', ui-monospace, monospace", display: "flex", alignItems: "center", gap: 8 }}>
-                    {fmt(data.montoTotal)} <Edit3 size={14} color={theme.textSecondary} />
-                  </div>
-                )}
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: theme.textSecondary, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Fecha inicio</div>
-                <input type="date" value={data.fechaInicio} onChange={e => setData(d => ({ ...d, fechaInicio: e.target.value }))}
-                  style={{ background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "6px 12px", color: theme.text, fontSize: 14, outline: "none" }} />
-              </div>
-              <div style={{ padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, background: saldo <= 0 ? theme.success + "20" : theme.accent + "20", color: saldo <= 0 ? theme.success : theme.accent }}>
-                {saldo <= 0 ? "✓ Cancelada" : "En curso"}
-              </div>
-              {rachaCount >= 2 && (
-                <div style={{ padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, background: theme.success + "20", color: theme.success }}>
-                  🔥 {rachaCount} meses seguidos
-                </div>
-              )}
-              {rachaCount === 1 && (
-                <div style={{ padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 600, background: theme.success + "20", color: theme.success }}>
-                  ✓ Pagaste este mes
-                </div>
-              )}
-            </div>
-            {data.pagos.length > 0 && (
-              <Btn small secondary onClick={exportResumen} style={{ marginTop: 4 }}><Share2 size={14} /> Exportar resumen</Btn>
-            )}
-          </Card>
+        e(Card,{ style:{ marginBottom:20, position:'relative', overflow:'hidden' } },
+          e('div',{ style:{ position:'absolute', top:0, right:0, width:200, height:200, background:'radial-gradient(circle at top right, '+theme.accent+'10, transparent)', pointerEvents:'none' } }),
+          e('div',{ style:{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:16, marginBottom:16 } },
+            e('div',{ style:{ flex:1, minWidth:200 } },
+              e('div',{ style:{ fontSize:12, color:theme.textSecondary, fontWeight:600, textTransform:'uppercase', letterSpacing:1, marginBottom:6 } },'Acreedor'),
+              editingAcreedor
+                ? e('input',{ autoFocus:true, value:data.acreedor, onChange:function(ev){ setData(function(d){ return Object.assign({},d,{acreedor:ev.target.value}); }); }, onBlur:function(){ setEditingAcreedor(false); }, onKeyDown:function(ev){ if(ev.key==='Enter') setEditingAcreedor(false); }, style:{ background:theme.inputBg, border:'1px solid '+theme.accent, borderRadius:8, padding:'6px 12px', color:theme.text, fontSize:22, fontWeight:700, outline:'none', width:200 } })
+                : e('div',{ onClick:function(){ setEditingAcreedor(true); }, style:{ cursor:'pointer', fontSize:24, fontWeight:700, color:theme.text, display:'flex', alignItems:'center', gap:8 } }, data.acreedor, e(Edit3,{size:14,color:theme.textSecondary}))
+            ),
+            e('div',null,
+              e('div',{ style:{ fontSize:12, color:theme.textSecondary, fontWeight:600, textTransform:'uppercase', letterSpacing:1, marginBottom:6 } },'Monto Total'),
+              editingMonto
+                ? e('input',{ autoFocus:true, value:data.montoTotal, onChange:function(ev){ setData(function(d){ return Object.assign({},d,{montoTotal:parseArgNum(ev.target.value)}); }); }, onBlur:function(){ setEditingMonto(false); }, onKeyDown:function(ev){ if(ev.key==='Enter') setEditingMonto(false); }, style:{ background:theme.inputBg, border:'1px solid '+theme.accent, borderRadius:8, padding:'6px 12px', color:theme.text, fontSize:22, fontWeight:700, outline:'none', width:200, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } })
+                : e('div',{ onClick:function(){ setEditingMonto(true); }, style:{ cursor:'pointer', fontSize:24, fontWeight:700, color:theme.accent, fontFamily:"'SFMono-Regular',ui-monospace,monospace", display:'flex', alignItems:'center', gap:8 } }, fmt(data.montoTotal), e(Edit3,{size:14,color:theme.textSecondary}))
+            ),
+            e('div',null,
+              e('div',{ style:{ fontSize:12, color:theme.textSecondary, fontWeight:600, textTransform:'uppercase', letterSpacing:1, marginBottom:6 } },'Fecha inicio'),
+              e('input',{ type:'date', value:data.fechaInicio, onChange:function(ev){ setData(function(d){ return Object.assign({},d,{fechaInicio:ev.target.value}); }); }, style:{ background:theme.inputBg, border:'1px solid '+theme.border, borderRadius:8, padding:'6px 12px', color:theme.text, fontSize:14, outline:'none' } })
+            ),
+            e('div',{ style:{ padding:'6px 16px', borderRadius:20, fontSize:13, fontWeight:600, background:saldo<=0?theme.success+'20':theme.accent+'20', color:saldo<=0?theme.success:theme.accent } }, saldo<=0?'✓ Cancelada':'En curso'),
+            rachaCount>=2 && e('div',{ style:{ padding:'6px 16px', borderRadius:20, fontSize:13, fontWeight:600, background:theme.success+'20', color:theme.success } },'🔥 '+rachaCount+' meses seguidos'),
+            rachaCount===1 && e('div',{ style:{ padding:'6px 16px', borderRadius:20, fontSize:13, fontWeight:600, background:theme.success+'20', color:theme.success } },'✓ Pagaste este mes')
+          ),
+          data.pagos.length>0 && e(Btn,{ small:true, secondary:true, onClick:exportResumen, style:{ marginTop:4 } }, e(Share2,{size:14}),' Exportar resumen')
+        ),
 
-          <Card style={{ marginBottom: 20, textAlign: "center" }}>
-            <MotoProgress percent={percent} theme={theme} />
-            <div style={{ marginTop: 12, fontSize: 16, fontWeight: 600, color: theme.text }}>
-              <span style={{ color: theme.accent, fontFamily: "'SFMono-Regular', ui-monospace, monospace", fontSize: 28 }}>{percent.toFixed(1)}%</span>
-              <span style={{ color: theme.textSecondary, fontSize: 14, marginLeft: 8 }}>completado</span>
-            </div>
-            <div style={{ color: theme.textSecondary, fontSize: 14, marginTop: 4, fontFamily: "'SFMono-Regular', ui-monospace, monospace" }}>
-              Pagaste {fmt(totalPagado)} de {fmt(data.montoTotal)}
-            </div>
-          </Card>
+        e(Card,{ style:{ marginBottom:20, textAlign:'center' } },
+          e(MotoProgress,{ percent:percent, theme:theme }),
+          e('div',{ style:{ marginTop:12, fontSize:16, fontWeight:600, color:theme.text } },
+            e('span',{ style:{ color:theme.accent, fontFamily:"'SFMono-Regular',ui-monospace,monospace", fontSize:28 } }, percent.toFixed(1)+'%'),
+            e('span',{ style:{ color:theme.textSecondary, fontSize:14, marginLeft:8 } },'completado')
+          ),
+          e('div',{ style:{ color:theme.textSecondary, fontSize:14, marginTop:4, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } },'Pagaste '+fmt(totalPagado)+' de '+fmt(data.montoTotal))
+        ),
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
-            <StatCard label="Total Pagado" value={fmt(totalPagado)} icon={DollarSign} />
-            <StatCard label="Saldo Restante" value={fmt(saldo)} icon={TrendingDown} accent={theme.warning} />
-            <StatCard label="Cuotas Pagadas" value={data.pagos.length} icon={Check} accent={theme.success} />
-            <StatCard label="Promedio Cuota" value={fmt(promedio)} icon={Calendar} />
-            {data.pagos.length > 0 && <StatCard label="Cuota Más Alta" value={fmt(maxCuota)} icon={ChevronUp} />}
-            {data.pagos.length > 0 && <StatCard label="Cuota Más Baja" value={fmt(minCuota)} icon={ChevronDown} />}
-            {mesesRestantes && saldo > 0 && <StatCard label="Proyección" value={`~${mesesRestantes} meses`} icon={Clock} accent={theme.accent} />}
-          </div>
+        e('div',{ style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:12, marginBottom:20 } },
+          e(StatCard,{ label:'Total Pagado', value:fmt(totalPagado), icon:DollarSign }),
+          e(StatCard,{ label:'Saldo Restante', value:fmt(saldo), icon:TrendingDown, accent:theme.warning }),
+          e(StatCard,{ label:'Cuotas Pagadas', value:data.pagos.length, icon:Check, accent:theme.success }),
+          e(StatCard,{ label:'Promedio Cuota', value:fmt(promedio), icon:Calendar }),
+          data.pagos.length>0 && e(StatCard,{ label:'Cuota Más Alta', value:fmt(maxCuota), icon:ChevronUp }),
+          data.pagos.length>0 && e(StatCard,{ label:'Cuota Más Baja', value:fmt(minCuota), icon:ChevronDown }),
+          mesesRestantes&&saldo>0 && e(StatCard,{ label:'Proyección', value:'~'+mesesRestantes+' meses', icon:Clock, accent:theme.accent })
+        ),
 
-          {data.pagos.length > 0 && (
-            <Card style={{ marginBottom: 20 }}>
-              <h4 style={{ color: theme.text, marginTop: 0, marginBottom: 16, fontSize: 16, fontWeight: 700 }}>Evolución de la deuda</h4>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={theme.accent} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={theme.accent} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme.border} />
-                  <XAxis dataKey="name" tick={{ fill: theme.textSecondary, fontSize: 12 }} />
-                  <YAxis tick={{ fill: theme.textSecondary, fontSize: 12 }} tickFormatter={v => "$" + (v / 1000000).toFixed(1) + "M"} />
-                  <Tooltip contentStyle={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 10, color: theme.text, fontSize: 13 }}
-                    formatter={(v) => [fmt(v), "Saldo"]} />
-                  <Area type="monotone" dataKey="saldo" stroke={theme.accent} fill={`url(#${gradientId})`} strokeWidth={2.5} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Card>
-          )}
-
-          <Card>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h4 style={{ color: theme.text, margin: 0, fontSize: 16, fontWeight: 700 }}>Historial de Pagos</h4>
-              <Btn small onClick={openAdd}><Plus size={16} /> Registrar pago</Btn>
-            </div>
-            {data.pagos.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: theme.textSecondary }}>
-                <Bike size={48} style={{ marginBottom: 12, opacity: 0.3 }} />
-                <p style={{ margin: "0 0 16px", fontSize: 15 }}>Todavía no registraste ningún pago</p>
-                <Btn onClick={openAdd}><Plus size={16} /> Registrar primer pago</Btn>
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 6px" }}>
-                  <thead>
-                    <tr style={{ textAlign: "left" }}>
-                      {["#", "Fecha", "Monto", "Método", "Comprobante", "Notas", ""].map(h => (
-                        <th key={h} style={{ padding: "8px 12px", color: theme.textSecondary, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.pagos.map((p, i) => (
-                      <tr key={p.id} style={{ background: i % 2 === 0 ? theme.surface : theme.bg }}>
-                        <td style={{ padding: "10px 12px", color: theme.textSecondary, fontSize: 13, fontWeight: 600, borderRadius: "8px 0 0 8px" }}>{i + 1}</td>
-                        <td style={{ padding: "10px 12px", color: theme.text, fontSize: 13 }}>{p.fecha}</td>
-                        <td style={{ padding: "10px 12px", color: theme.accent, fontSize: 14, fontWeight: 700, fontFamily: "'SFMono-Regular', ui-monospace, monospace" }}>{fmt(p.monto)}</td>
-                        <td style={{ padding: "10px 12px", color: theme.text, fontSize: 13, textTransform: "capitalize" }}>{p.metodo}</td>
-                        <td style={{ padding: "10px 12px" }}>
-                          {p.comprobante ? (
-                            <button onClick={() => setPreviewComp({ data: p.comprobante, nombre: p.comprobanteNombre })}
-                              style={{ background: "none", border: "none", color: theme.accent, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: 0 }}>
-                              <Eye size={14} /> {(p.comprobanteNombre || "").slice(0, 15) || "Ver"}
-                            </button>
-                          ) : <span style={{ color: theme.textSecondary, fontSize: 12 }}>—</span>}
-                        </td>
-                        <td style={{ padding: "10px 12px", color: theme.textSecondary, fontSize: 12, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.notas || "—"}</td>
-                        <td style={{ padding: "10px 12px", borderRadius: "0 8px 8px 0", whiteSpace: "nowrap" }}>
-                          {p.historial?.length > 0 && (
-                            <button onClick={() => setShowHistory(i)} style={{ background: "none", border: "none", color: theme.textSecondary, cursor: "pointer", padding: 4 }} title="Historial"><History size={14} /></button>
-                          )}
-                          <button onClick={() => openEdit(i)} style={{ background: "none", border: "none", color: theme.textSecondary, cursor: "pointer", padding: 4 }}><Edit3 size={15} /></button>
-                          <button onClick={() => deletePago(i)} style={{ background: "none", border: "none", color: theme.danger, cursor: "pointer", padding: 4 }}><Trash2 size={15} /></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-
-          <Modal open={showModal} onClose={() => setShowModal(false)} title={editIdx !== null ? "Editar Pago" : "Registrar Pago"}>
-            <Input label="Fecha" value={form.fecha} onChange={v => setForm(f => ({ ...f, fecha: v }))} type="date" />
-            <Input label="Monto ($)" value={form.monto} onChange={v => setForm(f => ({ ...f, monto: v }))} placeholder="150.000" mono />
-            <Select label="Método de pago" value={form.metodo} onChange={v => setForm(f => ({ ...f, metodo: v }))} options={metodos} />
-            <Input label="Notas (opcional)" value={form.notas} onChange={v => setForm(f => ({ ...f, notas: v }))} placeholder="Pago de enero..." />
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: "block", color: theme.textSecondary, fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Comprobante</label>
-              <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={handleFile} style={{ display: "none" }} />
-              <Btn secondary small onClick={() => fileRef.current?.click()}><Paperclip size={14} /> {form.comprobanteNombre || "Adjuntar archivo"}</Btn>
-              {form.comprobante && <span style={{ color: theme.success, fontSize: 12, marginLeft: 10 }}>✓ Cargado</span>}
-            </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-              <Btn secondary onClick={() => setShowModal(false)}>Cancelar</Btn>
-              <Btn onClick={savePago}>{editIdx !== null ? "Guardar" : "Registrar"}</Btn>
-            </div>
-          </Modal>
-        </div>
-      );
-    }
-
-    // ============================================================
-    // MODULE 2 — CRÉDITOS DIGITALES
-    // ============================================================
-    const categorias = [
-      { value: "comida", label: "🍔 Comida" }, { value: "indumentaria", label: "👕 Indumentaria" },
-      { value: "tecnologia", label: "💻 Tecnología" }, { value: "salud", label: "🏥 Salud" },
-      { value: "emergencia", label: "🚨 Emergencia" }, { value: "otro", label: "📦 Otro" },
-    ];
-    const catEmojis = { comida: "🍔", indumentaria: "👕", tecnologia: "💻", salud: "🏥", emergencia: "🚨", otro: "📦" };
-
-    function CreditoModule({ storageKey, defaultData }) {
-      const theme = useContext(ThemeContext);
-      const toast = useContext(ToastContext);
-      const [confirm, ConfirmDialog] = useConfirm();
-      const [data, setData] = useState(() => load(storageKey, defaultData));
-      const [showModal, setShowModal] = useState(false);
-      const [editIdx, setEditIdx] = useState(null);
-      const [filterMes, setFilterMes] = useState("");
-      const [filterCat, setFilterCat] = useState("");
-      const [searchQ, setSearchQ] = useState("");
-      const [showPagoMes, setShowPagoMes] = useState(false);
-      const [pagoMesForm, setPagoMesForm] = useState({ mes: "", monto: "" });
-      const [showVencForm, setShowVencForm] = useState(false);
-      const [vencForm, setVencForm] = useState({ mes: "", fecha: "" });
-      const [form, setForm] = useState({
-        descripcion: "", monto: "", enCuotas: false, cantCuotas: "1",
-        categoria: "otro", fecha: todayStr(), mesResumen: new Date().toISOString().slice(0, 7),
-      });
-
-      useEffect(() => { save(storageKey, data); }, [data, storageKey]);
-
-      const resetForm = () => setForm({
-        descripcion: "", monto: "", enCuotas: false, cantCuotas: "1",
-        categoria: "otro", fecha: todayStr(), mesResumen: new Date().toISOString().slice(0, 7),
-      });
-
-      const openAdd = () => { resetForm(); setEditIdx(null); setShowModal(true); };
-      const openEdit = (i) => {
-        const m = data.movimientos[i];
-        setForm({ descripcion: m.descripcion, monto: String(m.monto), enCuotas: m.enCuotas, cantCuotas: String(m.cantCuotas || 1), categoria: m.categoria, fecha: m.fecha, mesResumen: m.mesResumen });
-        setEditIdx(i); setShowModal(true);
-      };
-
-      const saveMovimiento = () => {
-        const monto = parseArgNum(form.monto);
-        if (!form.descripcion.trim()) { toast("Ingresá una descripción", "error"); return; }
-        if (!monto || monto <= 0) { toast("Ingresá un monto válido", "error"); return; }
-        const cantCuotas = form.enCuotas ? Math.max(1, parseInt(form.cantCuotas) || 1) : 1;
-        const montoCuota = form.enCuotas ? Math.round(monto / cantCuotas) : monto;
-        const mov = {
-          id: editIdx !== null ? data.movimientos[editIdx].id : uid(),
-          descripcion: form.descripcion.trim(), monto, enCuotas: form.enCuotas,
-          cantCuotas, montoCuota, categoria: form.categoria,
-          fecha: form.fecha, mesResumen: form.mesResumen,
-        };
-        const movs = [...data.movimientos];
-        if (editIdx !== null) movs[editIdx] = mov; else movs.push(mov);
-        movs.sort((a, b) => a.fecha.localeCompare(b.fecha));
-        setData(d => ({ ...d, movimientos: movs }));
-        setShowModal(false);
-        toast(editIdx !== null ? "Movimiento actualizado" : "Movimiento registrado");
-      };
-
-      const deleteMovimiento = async (i) => {
-        if (await confirm(`¿Eliminar "${data.movimientos[i].descripcion}"?`)) {
-          setData(d => ({ ...d, movimientos: d.movimientos.filter((_, j) => j !== i) }));
-          toast("Movimiento eliminado");
-        }
-      };
-
-      const getMesData = useCallback((mesKey) => {
-        const [y, m] = mesKey.split("-").map(Number);
-        let total = 0, nuevos = 0, arrastre = 0;
-        let detalles = [];
-        data.movimientos.forEach(mov => {
-          const [my, mm] = mov.mesResumen.split("-").map(Number);
-          const cantCuotas = mov.enCuotas ? mov.cantCuotas : 1;
-          const montoCuota = mov.enCuotas ? mov.montoCuota : mov.monto;
-          for (let c = 0; c < cantCuotas; c++) {
-            let cm = mm + c, cy = my;
-            while (cm > 12) { cm -= 12; cy++; }
-            if (cy === y && cm === m) {
-              total += montoCuota;
-              const isNew = (c === 0);
-              if (isNew) nuevos += montoCuota; else arrastre += montoCuota;
-              detalles.push({ ...mov, cuotaActual: c + 1, impacto: montoCuota, tipo: isNew ? "nuevo" : "arrastre" });
-            }
-          }
-        });
-        return { total, nuevos, arrastre, detalles };
-      }, [data.movimientos]);
-
-      const mesesConDatos = useMemo(() => {
-        const set = new Set();
-        data.movimientos.forEach(m => {
-          const cantCuotas = m.enCuotas ? m.cantCuotas : 1;
-          for (let c = 0; c < cantCuotas; c++) { set.add(addMonths(m.mesResumen, c)); }
-        });
-        return [...set].sort();
-      }, [data.movimientos]);
-
-      const pagosMensuales = data.pagosMensuales || [];
-      const vencimientos = data.vencimientos || {};
-      const mesActual = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-      const mesActualData = getMesData(mesActual);
-
-      const totalPendiente = useMemo(() => {
-        let t = 0;
-        mesesConDatos.forEach(mes => { t += getMesData(mes).total; });
-        return Math.max(0, t - pagosMensuales.reduce((s, p) => s + p.monto, 0));
-      }, [mesesConDatos, getMesData, pagosMensuales]);
-
-      const savePagoMes = () => {
-        const monto = parseArgNum(pagoMesForm.monto);
-        if (!monto) { toast("Ingresá un monto", "error"); return; }
-        setData(d => ({ ...d, pagosMensuales: [...(d.pagosMensuales || []), { id: uid(), mes: pagoMesForm.mes, monto, fecha: todayStr() }] }));
-        setShowPagoMes(false); toast("Pago mensual registrado");
-      };
-
-      const saveVencimiento = () => {
-        if (!vencForm.mes || !vencForm.fecha) { toast("Completá mes y fecha", "error"); return; }
-        setData(d => ({ ...d, vencimientos: { ...(d.vencimientos || {}), [vencForm.mes]: vencForm.fecha } }));
-        setShowVencForm(false); toast("Vencimiento guardado");
-      };
-
-      const filtered = data.movimientos.filter(m => {
-        if (filterMes && m.mesResumen !== filterMes) return false;
-        if (filterCat && m.categoria !== filterCat) return false;
-        if (searchQ && !m.descripcion.toLowerCase().includes(searchQ.toLowerCase())) return false;
-        return true;
-      });
-
-      const catChartData = useMemo(() => {
-        const targetMes = filterMes || mesActual;
-        const md = getMesData(targetMes);
-        const bycat = {};
-        md.detalles.forEach(d => { bycat[d.categoria] = (bycat[d.categoria] || 0) + d.impacto; });
-        return categorias.map(c => ({ name: c.label.split(" ").slice(1).join(" "), monto: bycat[c.value] || 0 })).filter(c => c.monto > 0);
-      }, [filterMes, mesActual, getMesData]);
-
-      const copyMesSummary = (mesKey) => {
-        const md = getMesData(mesKey);
-        const [y, m] = mesKey.split("-").map(Number);
-        const pago = pagosMensuales.find(p => p.mes === mesKey);
-        let txt = `${data.nombre} — ${monthNames[m - 1]} ${y}\n`;
-        txt += `${"─".repeat(35)}\n`;
-        txt += `Total: ${fmt(md.total)}\n`;
-        txt += `  Nuevos: ${fmt(md.nuevos)}\n`;
-        txt += `  Arrastre: ${fmt(md.arrastre)}\n`;
-        txt += `  ${md.detalles.length} movimiento${md.detalles.length !== 1 ? "s" : ""}\n`;
-        if (pago) txt += `  Pagado: ${fmt(pago.monto)}\n`;
-        txt += `\nDetalle:\n`;
-        md.detalles.forEach(d => {
-          txt += `  - ${d.descripcion} — ${fmt(d.impacto)}`;
-          if (d.tipo === "arrastre") txt += ` (cuota ${d.cuotaActual}/${d.cantCuotas})`;
-          txt += `\n`;
-        });
-        txt += `\nGenerado por DeudaTracker`;
-        navigator.clipboard.writeText(txt).then(() => toast("Resumen copiado")).catch(() => toast("Error al copiar", "error"));
-      };
-
-      return (
-        <div>
-          <ConfirmDialog />
-          <VencimientoAlert vencimientos={vencimientos} nombre={data.nombre} />
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
-            <StatCard label="Deuda Pendiente" value={fmt(totalPendiente)} icon={CreditCard} />
-            <StatCard label="Pagado Total" value={fmt(pagosMensuales.reduce((s, p) => s + p.monto, 0))} icon={Check} accent={theme.success} />
-            <StatCard label="Este Mes" value={fmt(mesActualData.total)} icon={Calendar} accent={theme.accent} />
-            <StatCard label="Arrastre este mes" value={fmt(mesActualData.arrastre)} icon={TrendingDown} accent={theme.warning} />
-          </div>
-
-          {catChartData.length > 0 && (
-            <Card style={{ marginBottom: 20 }}>
-              <h4 style={{ color: theme.text, marginTop: 0, marginBottom: 16, fontSize: 16, fontWeight: 700 }}>
-                Gastos por Categoría {filterMes ? `— ${(() => { const [y, m] = filterMes.split("-").map(Number); return `${monthNames[m-1]} ${y}`; })()}` : "(mes actual)"}
-              </h4>
-              <ResponsiveContainer width="100%" height={Math.max(120, catChartData.length * 45)}>
-                <BarChart data={catChartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme.border} horizontal={false} />
-                  <XAxis type="number" tick={{ fill: theme.textSecondary, fontSize: 11 }} tickFormatter={v => fmt(v)} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: theme.text, fontSize: 12 }} width={100} />
-                  <Tooltip contentStyle={{ background: theme.surface, border: `1px solid ${theme.border}`, borderRadius: 10, color: theme.text, fontSize: 13 }}
-                    formatter={v => [fmt(v), "Monto"]} />
-                  <Bar dataKey="monto" fill={theme.accent} radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-          )}
-
-          {mesesConDatos.length > 0 && (
-            <Card style={{ marginBottom: 20 }}>
-              <h4 style={{ color: theme.text, marginTop: 0, marginBottom: 16, fontSize: 16, fontWeight: 700 }}>Resúmenes Mensuales</h4>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {mesesConDatos.map(mes => {
-                  const md = getMesData(mes);
-                  const [y, m] = mes.split("-").map(Number);
-                  const pago = pagosMensuales.find(p => p.mes === mes);
-                  const estado = pago ? (pago.monto >= md.total ? "pagado" : "parcial") : "pendiente";
-                  const venc = vencimientos[mes];
-                  const diasVenc = venc ? daysUntil(venc) : null;
-                  return (
-                    <div key={mes} style={{
-                      background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 12,
-                      padding: 16, minWidth: 185, flex: "1 1 185px",
-                      borderTop: `3px solid ${estado === "pagado" ? theme.success : estado === "parcial" ? theme.warning : theme.accent}`,
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{monthNames[m - 1]} {y}</div>
-                        <button onClick={() => copyMesSummary(mes)} title="Copiar resumen" style={{ background: "none", border: "none", color: theme.textSecondary, cursor: "pointer", padding: 2 }}><Copy size={14} /></button>
-                      </div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: theme.accent, fontFamily: "'SFMono-Regular', ui-monospace, monospace", marginBottom: 6 }}>{fmt(md.total)}</div>
-                      <div style={{ fontSize: 11, color: theme.textSecondary, display: "flex", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                        <span style={{ color: theme.success }}>🆕 {fmt(md.nuevos)}</span>
-                        {md.arrastre > 0 && <span style={{ color: theme.warning }}>🔄 {fmt(md.arrastre)}</span>}
-                      </div>
-                      <div style={{ fontSize: 11, color: theme.textSecondary, marginBottom: 6 }}>{md.detalles.length} mov.</div>
-                      {venc && (
-                        <div style={{ fontSize: 11, color: diasVenc !== null && diasVenc <= 7 && diasVenc >= 0 ? theme.warning : theme.textSecondary, marginBottom: 6 }}>
-                          Vence: {venc} {diasVenc !== null && diasVenc >= 0 && diasVenc <= 7 ? `(${diasVenc}d)` : ""}
-                        </div>
-                      )}
-                      <div style={{
-                        fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 10, display: "inline-block",
-                        background: estado === "pagado" ? theme.success + "20" : estado === "parcial" ? theme.warning + "20" : theme.textSecondary + "20",
-                        color: estado === "pagado" ? theme.success : estado === "parcial" ? theme.warning : theme.textSecondary,
-                      }}>
-                        {estado === "pagado" ? "Pagado" : estado === "parcial" ? "Parcial" : "Pendiente"}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
-            <Btn onClick={openAdd}><Plus size={16} /> Nuevo movimiento</Btn>
-            <Btn secondary onClick={() => { setPagoMesForm({ mes: mesActual, monto: "" }); setShowPagoMes(true); }}>
-              <DollarSign size={16} /> Registrar pago
-            </Btn>
-            <Btn secondary onClick={() => { setVencForm({ mes: mesActual, fecha: "" }); setShowVencForm(true); }}>
-              <Calendar size={16} /> Cargar vencimiento
-            </Btn>
-          </div>
-
-          <Card style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
-              <div style={{ flex: "1 1 200px" }}>
-                <Input label="Buscar" value={searchQ} onChange={setSearchQ} placeholder="Descripción..." style={{ marginBottom: 0 }} />
-              </div>
-              <div style={{ flex: "1 1 150px" }}>
-                <Select label="Mes" value={filterMes} onChange={setFilterMes}
-                  options={[{ value: "", label: "Todos" }, ...mesesConDatos.map(m => {
-                    const [y, mo] = m.split("-").map(Number);
-                    return { value: m, label: `${monthNames[mo - 1]} ${y}` };
-                  })]} />
-              </div>
-              <div style={{ flex: "1 1 150px" }}>
-                <Select label="Categoría" value={filterCat} onChange={setFilterCat}
-                  options={[{ value: "", label: "Todas" }, ...categorias]} />
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <h4 style={{ color: theme.text, marginTop: 0, marginBottom: 16, fontSize: 16, fontWeight: 700 }}>Movimientos ({filtered.length})</h4>
-            {filtered.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: theme.textSecondary }}>
-                <CreditCard size={48} style={{ marginBottom: 12, opacity: 0.3 }} />
-                <p style={{ margin: "0 0 16px", fontSize: 15 }}>No hay movimientos registrados</p>
-                <Btn onClick={openAdd}><Plus size={16} /> Agregar movimiento</Btn>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {filtered.map(m => {
-                  const origIdx = data.movimientos.findIndex(mov => mov.id === m.id);
-                  return (
-                    <div key={m.id} style={{
-                      display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, padding: "12px 16px",
-                      background: theme.bg, borderRadius: 12, border: `1px solid ${theme.border}`,
-                    }}>
-                      <div style={{ fontSize: 20, width: 36, textAlign: "center", flexShrink: 0 }}>{catEmojis[m.categoria] || "📦"}</div>
-                      <div style={{ flex: 1, minWidth: 120 }}>
-                        <div style={{ color: theme.text, fontSize: 14, fontWeight: 600 }}>{m.descripcion}</div>
-                        <div style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                          {m.fecha}
-                          {m.enCuotas && m.cantCuotas > 1 && ` · ${m.cantCuotas} cuotas de ${fmt(m.montoCuota)}`}
-                          {m.enCuotas && m.cantCuotas > 1 && <span style={{ color: theme.warning, marginLeft: 6 }}>(impacta {m.cantCuotas} meses)</span>}
-                        </div>
-                      </div>
-                      <div style={{ color: theme.accent, fontWeight: 700, fontSize: 16, fontFamily: "'SFMono-Regular', ui-monospace, monospace", flexShrink: 0 }}>{fmt(m.monto)}</div>
-                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                        <button onClick={() => openEdit(origIdx)} style={{ background: "none", border: "none", color: theme.textSecondary, cursor: "pointer", padding: 4 }}><Edit3 size={15} /></button>
-                        <button onClick={() => deleteMovimiento(origIdx)} style={{ background: "none", border: "none", color: theme.danger, cursor: "pointer", padding: 4 }}><Trash2 size={15} /></button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          <Modal open={showModal} onClose={() => setShowModal(false)} title={editIdx !== null ? "Editar Movimiento" : "Nuevo Movimiento"}>
-            <Input label="Descripción" value={form.descripcion} onChange={v => setForm(f => ({ ...f, descripcion: v }))} placeholder="Compra en Mercado Libre..." />
-            <Input label="Monto total ($)" value={form.monto} onChange={v => setForm(f => ({ ...f, monto: v }))} placeholder="25.000" mono />
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", color: theme.text, fontSize: 14 }}>
-                <input type="checkbox" checked={form.enCuotas} onChange={e => setForm(f => ({ ...f, enCuotas: e.target.checked }))}
-                  style={{ width: 18, height: 18, accentColor: theme.accent }} />
-                ¿En cuotas?
-              </label>
-            </div>
-            {form.enCuotas && (
-              <>
-                <Input label="Cantidad de cuotas" value={form.cantCuotas} onChange={v => setForm(f => ({ ...f, cantCuotas: v }))} type="number" />
-                {parseArgNum(form.monto) > 0 && parseInt(form.cantCuotas) > 0 && (
-                  <div style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 14, padding: "8px 12px", background: theme.bg, borderRadius: 8 }}>
-                    {parseInt(form.cantCuotas)} cuotas de <strong style={{ color: theme.accent }}>{fmt(Math.round(parseArgNum(form.monto) / parseInt(form.cantCuotas)))}</strong> — impacta desde {form.mesResumen} hasta {addMonths(form.mesResumen, parseInt(form.cantCuotas) - 1)}
-                  </div>
-                )}
-              </>
-            )}
-            <Select label="Categoría" value={form.categoria} onChange={v => setForm(f => ({ ...f, categoria: v }))} options={categorias} />
-            <Input label="Fecha del movimiento" value={form.fecha} onChange={v => setForm(f => ({ ...f, fecha: v }))} type="date" />
-            <MonthInput label="Mes de resumen (inicio)" value={form.mesResumen} onChange={v => setForm(f => ({ ...f, mesResumen: v }))} />
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-              <Btn secondary onClick={() => setShowModal(false)}>Cancelar</Btn>
-              <Btn onClick={saveMovimiento}>{editIdx !== null ? "Guardar" : "Agregar"}</Btn>
-            </div>
-          </Modal>
-
-          <Modal open={showPagoMes} onClose={() => setShowPagoMes(false)} title="Registrar Pago Mensual">
-            <MonthInput label="Mes" value={pagoMesForm.mes} onChange={v => setPagoMesForm(f => ({ ...f, mes: v }))} />
-            <Input label="Monto pagado ($)" value={pagoMesForm.monto} onChange={v => setPagoMesForm(f => ({ ...f, monto: v }))} placeholder="50.000" mono />
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-              <Btn secondary onClick={() => setShowPagoMes(false)}>Cancelar</Btn>
-              <Btn onClick={savePagoMes}>Registrar</Btn>
-            </div>
-          </Modal>
-
-          <Modal open={showVencForm} onClose={() => setShowVencForm(false)} title="Fecha de Vencimiento">
-            <MonthInput label="Mes del resumen" value={vencForm.mes} onChange={v => setVencForm(f => ({ ...f, mes: v }))} />
-            <Input label="Fecha de vencimiento" value={vencForm.fecha} onChange={v => setVencForm(f => ({ ...f, fecha: v }))} type="date" />
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
-              <Btn secondary onClick={() => setShowVencForm(false)}>Cancelar</Btn>
-              <Btn onClick={saveVencimiento}>Guardar</Btn>
-            </div>
-          </Modal>
-        </div>
-      );
-    }
-
-    function CreditosModule() {
-      const theme = useContext(ThemeContext);
-      const [tab, setTab] = useState("naranjax");
-      return (
-        <div>
-          <div style={{ display: "flex", gap: 4, marginBottom: 20, background: theme.surface, borderRadius: 14, padding: 4, border: `1px solid ${theme.border}` }}>
-            {[
-              { id: "naranjax", label: "🟠 Naranja X", desc: "Tarjeta de crédito" },
-              { id: "mercadocredito", label: "🔵 Mercado Crédito", desc: "Crédito personal" },
-            ].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{
-                flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", cursor: "pointer",
-                background: tab === t.id ? theme.accent : "transparent",
-                color: tab === t.id ? "#fff" : theme.textSecondary,
-                transition: "all 0.2s ease", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 600,
-              }}>
-                <div>{t.label}</div>
-                <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.8, marginTop: 2 }}>{t.desc}</div>
-              </button>
-            ))}
-          </div>
-          {tab === "naranjax" ? (
-            <CreditoModule storageKey="deudatracker_naranjax" defaultData={defaultNaranjaX} />
-          ) : (
-            <CreditoModule storageKey="deudatracker_mercadocredito" defaultData={defaultMercadoCredito} />
-          )}
-        </div>
-      );
-    }
-
-    // ============================================================
-    // QUOTA LISTENER
-    // ============================================================
-    function QuotaListener() {
-      const toast = useContext(ToastContext);
-      useEffect(() => {
-        const handler = () => toast("⚠️ Almacenamiento lleno. Eliminá comprobantes adjuntos para liberar espacio.", "error");
-        window.addEventListener('storageQuotaExceeded', handler);
-        return () => window.removeEventListener('storageQuotaExceeded', handler);
-      }, [toast]);
-      return null;
-    }
-
-    // ============================================================
-    // MAIN APP
-    // ============================================================
-    function DeudaTracker() {
-      const [isDark, setIsDark] = useState(() => {
-        const saved = localStorage.getItem("deudatracker_theme");
-        return saved ? saved === "dark" : true;
-      });
-      const theme = isDark ? darkTheme : lightTheme;
-      const [activeTab, setActiveTab] = useState("prestamo");
-      const [quickPayOpen, setQuickPayOpen] = useState(false);
-      const [fabHov, setFabHov] = useState(false);
-      const [isMobile, setIsMobile] = useState(window.innerWidth < 600);
-
-      useEffect(() => {
-        const handler = () => setIsMobile(window.innerWidth < 600);
-        window.addEventListener('resize', handler);
-        return () => window.removeEventListener('resize', handler);
-      }, []);
-
-      useEffect(() => { localStorage.setItem("deudatracker_theme", isDark ? "dark" : "light"); }, [isDark]);
-
-      return (
-        <ThemeContext.Provider value={theme}>
-          <ToastProvider>
-            <QuickPayContext.Provider value={{ quickPayOpen, setQuickPayOpen }}>
-              <QuotaListener />
-              <div style={{
-                minHeight: "100vh", background: theme.bg, color: theme.text,
-                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                transition: "background 0.3s ease, color 0.3s ease",
-              }}>
-                <style>{`
-                  input[type="date"]::-webkit-calendar-picker-indicator { filter: ${isDark ? "invert(1)" : "none"}; }
-                  ::-webkit-scrollbar-thumb { background: ${theme.border}; }
-                `}</style>
-
-                <header style={{
-                  position: "sticky", top: 0, zIndex: 100,
-                  background: theme.surface + "ee", backdropFilter: "blur(12px)",
-                  borderBottom: `1px solid ${theme.border}`, padding: "0 20px",
-                }}>
-                  <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", height: 64, gap: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${theme.accent}, ${theme.accentHover})`,
-                        display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 16,
-                      }}>D</div>
-                      <span style={{ fontWeight: 800, fontSize: 18, color: theme.text, letterSpacing: -0.5 }}>
-                        Deuda<span style={{ color: theme.accent }}>Tracker</span>
-                      </span>
-                    </div>
-                    <nav style={{ display: "flex", gap: 4, flex: 1, justifyContent: "center" }}>
-                      {[{ id: "prestamo", label: "🏍️ Préstamo" }, { id: "creditos", label: "💳 Créditos" }].map(t => (
-                        <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-                          padding: "8px 20px", borderRadius: 10, border: "none", cursor: "pointer",
-                          background: activeTab === t.id ? theme.accent + "20" : "transparent",
-                          color: activeTab === t.id ? theme.accent : theme.textSecondary,
-                          fontWeight: 600, fontSize: 14, transition: "all 0.2s ease", fontFamily: "'Inter', system-ui, sans-serif",
-                        }}>{t.label}</button>
-                      ))}
-                    </nav>
-                    <button onClick={() => setIsDark(!isDark)} style={{
-                      background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: 10,
-                      width: 40, height: 40, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                      color: theme.textSecondary, transition: "all 0.2s ease", flexShrink: 0,
-                    }}>
-                      {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
-                  </div>
-                </header>
-
-                <main style={{ maxWidth: 960, margin: "0 auto", padding: "24px 20px 60px" }}>
-                  {activeTab === "prestamo" ? <PrestamoModule /> : <CreditosModule />}
-                </main>
-
-                <div style={{ textAlign: "center", padding: "20px", color: theme.textSecondary, fontSize: 12, borderTop: `1px solid ${theme.border}` }}>
-                  DeudaTracker · {new Date().toLocaleDateString("es-AR")}
-                </div>
-
-                {activeTab === "prestamo" && (
-                  <button
-                    onClick={() => setQuickPayOpen(true)}
-                    onMouseEnter={() => setFabHov(true)}
-                    onMouseLeave={() => setFabHov(false)}
-                    title="Registrar pago rápido"
-                    style={{
-                      position: "fixed", bottom: isMobile ? 80 : 24, left: 24, zIndex: 500,
-                      width: 56, height: 56, borderRadius: "50%", background: theme.accent,
-                      border: "none", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      boxShadow: fabHov ? "0 8px 25px rgba(0,0,0,0.4)" : "0 4px 15px rgba(0,0,0,0.25)",
-                      transform: fabHov ? "scale(1.08)" : "scale(1)",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    <Plus size={24} color="#fff" />
-                  </button>
-                )}
-              </div>
-            </QuickPayContext.Provider>
-          </ToastProvider>
-        </ThemeContext.Provider>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(DeudaTracker));
-  </script>
-</body>
-</html>
+        data.pagos.length>0 && e(Card,{ style:{ marginBottom:20 } },
+          e('h4',{ style:{ color:theme.text, marginTop:0, marginBottom:16, fontSize:16, fontWeight:700 } },'Evolución de la deuda'),
+          e(ResponsiveContainer,{ width:'100%', height:220 },
+            e(AreaChart,{ data:chartData },
+              e('defs',null,
+                e('linearGradient',{ id:gradientId, x1:'0', y1:'0', x2:'0', y2:'1' },
+                  e('stop',{ offset:'5%', stopColor:theme.accent, stopOpacity:0.3 }),
+                  e('stop',{ offset:'95%', stopColor:theme.accent, stopOpacity:0 })
+                )
+              ),
+              e(CartesianGrid,{ strokeDasharray:'3 3', stroke:theme.border }),
+              e(XAxis,{ dataKey:'name', tick:{ fill:theme.textSecondary, fontSize:12 } }),
+              e(YAxis,{ tick:{ fill:theme.textSecondary, fontSize:12 }, tickFormatter:function(v){ return '$'+(v/1000000).toFixed(1)+'M'; } }),
+              e(Tooltip,{ contentStyle:{ background:theme.surface, border:'1px solid '+theme.border, borderRadius:10, color:theme.text, fontSize:13 }, formatter:function(v){ return [fmt(v),'Saldo']; } }),
+              e(Area,{ type:'monotone', 
