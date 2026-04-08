@@ -1,5 +1,23 @@
+<!--
+  DEUDATRACKER — Instrucciones de instalación en celular
 
+  ANDROID (Chrome):
+  1. Abrí este archivo en Chrome
+  2. Menú (⋮) → "Agregar a pantalla de inicio"
+  3. Confirmá → queda como ícono de app
+
+  iOS (Safari):
+  1. Abrí este archivo en Safari
+  2. Botón compartir (□↑) → "Agregar a pantalla de inicio"
+  3. Confirmá → queda como ícono sin barra del navegador
+
+  Para pasar el archivo al celular:
+  - Android: conectá por USB y copiá el archivo a Descargas
+  - iOS: mandátelo por AirDrop, Mail o guardalo en iCloud Drive
+  - Ambos: subilo a Google Drive y descargalo desde el celular
+-->
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -764,5 +782,4 @@
               e(CartesianGrid,{ strokeDasharray:'3 3', stroke:theme.border }),
               e(XAxis,{ dataKey:'name', tick:{ fill:theme.textSecondary, fontSize:12 } }),
               e(YAxis,{ tick:{ fill:theme.textSecondary, fontSize:12 }, tickFormatter:function(v){ return '$'+(v/1000000).toFixed(1)+'M'; } }),
-              e(Tooltip,{ contentStyle:{ background:theme.surface, border:'1px solid '+theme.border, borderRadius:10, color:theme.text, fontSize:13 }, formatter:function(v){ return [fmt(v),'Saldo']; } }),
-              e(Area,{ type:'monotone', 
+              e(Tooltip,{ contentStyle:{ background:theme.surface, border:'1px solid '+theme.border, borderRadius:10,
