@@ -38,6 +38,7 @@
     @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
     * { box-sizing: border-box; }
+    html, body { overflow-x: hidden; width: 100%; }
     body { margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #1a1a1a; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -75,7 +76,6 @@
   function initApp() {
     try {
       var _nx = localStorage.getItem('deudatracker_naranjax');
-      var _mc = localStorage.getItem('deudatracker_mercadocredito');
       var _needsReset = false;
       if (_nx) {
         var _nxp = JSON.parse(_nx);
@@ -88,8 +88,8 @@
       }
       if (_needsReset) {
         localStorage.removeItem('deudatracker_naranjax');
-        localStorage.removeItem('deudatracker_mercadocredito');
       }
+      localStorage.removeItem('deudatracker_mercadocredito');
     } catch(_e) {}
     document.getElementById('loading').style.display = 'none';
 
@@ -330,19 +330,6 @@
         '2026-05': '2026-06-10'
       }
     };
-    var defaultMercadoCredito = {
-      nombre: 'Mercado Crédito',
-      movimientos: [
-        { id: uid(), descripcion: 'Préstamo Mercado Crédito', monto: 73500, enCuotas: false, cantCuotas: 1, montoCuota: 73500, categoria: 'otro', fecha: '2026-02-20', mesResumen: '2026-02' },
-      ],
-      pagosMensuales: [
-        { id: uid(), mes: '2026-02', monto: 73500, fecha: '2026-04-07' },
-      ],
-      vencimientos: {
-        '2026-02': '2026-03-10'
-      }
-    };
-
     function load(key, def) {
       try { var d = localStorage.getItem(key); return d ? JSON.parse(d) : def; }
       catch(e) { return def; }
@@ -371,7 +358,7 @@
       var colors = { success: '#22c55e', error: '#ef4444', info: '#DC143C' };
       return e(ToastContext.Provider, { value: add },
         props.children,
-        e('div', { style: { position:'fixed', bottom:20, right:20, zIndex:9999, display:'flex', flexDirection:'column', gap:8 } },
+        e('div', { style: { position:'fixed', bottom:20, right:20, zIndex:9999, display:'flex', flexDirection:'column', gap:8, maxWidth:'calc(100vw - 40px)' } },
           toasts.map(function(t) {
             return e('div', {
               key: t.id,
@@ -406,7 +393,7 @@
       },
         e('div', {
           onClick: function(ev) { ev.stopPropagation(); },
-          style: { background:theme.surface, borderRadius:16, padding:28, width:'100%', maxWidth:wide?720:480, maxHeight:'85vh', overflowY:'auto', border:'1px solid '+theme.border, boxShadow:'0 24px 64px rgba(0,0,0,0.4)', animation:'scaleIn 0.3s ease' }
+          style: { background:theme.surface, borderRadius:16, padding:window.innerWidth<600?16:28, width:'100%', maxWidth:wide?720:480, maxHeight:'85vh', overflowY:'auto', border:'1px solid '+theme.border, boxShadow:'0 24px 64px rgba(0,0,0,0.4)', animation:'scaleIn 0.3s ease' }
         },
           e('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 } },
             e('h3', { style: { margin:0, color:theme.text, fontSize:20, fontWeight:700 } }, title),
@@ -831,6 +818,7 @@
       }, [{ name:'Inicio', saldo:data.montoTotal, pagado:0 }]);
 
       var metodos=[{value:'efectivo',label:'Efectivo'},{value:'transferencia',label:'Transferencia'},{value:'mercadopago',label:'Mercado Pago'},{value:'otro',label:'Otro'}];
+      var isMob = window.innerWidth < 600;
 
       return e('div',null,
         e(ConfirmDialog,null),
@@ -872,7 +860,7 @@
           e('div',{ style:{ color:theme.textSecondary, fontSize:14, marginTop:4, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } },'Pagaste '+fmt(totalPagado)+' de '+fmt(data.montoTotal))
         ),
 
-        e('div',{ style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:12, marginBottom:20 } },
+        e('div',{ style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12, marginBottom:20 } },
           e(StatCard,{ label:'Total Pagado', value:fmt(totalPagado), icon:DollarSign }),
           e(StatCard,{ label:'Saldo Restante', value:fmt(saldo), icon:TrendingDown, accent:theme.warning }),
           e(StatCard,{ label:'Cuotas Pagadas', value:data.pagos.length, icon:Check, accent:theme.success }),
@@ -903,24 +891,25 @@
                   e('thead',null,
                     e('tr',{ style:{ textAlign:'left' } },
                       ['#','Fecha','Monto','Método','Comprobante','Notas',''].map(function(h){
-                        return e('th',{ key:h, style:{ padding:'8px 12px', color:theme.textSecondary, fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5, whiteSpace:'nowrap' } },h);
+                        var hideCol = (h==='Método'||h==='Notas') && isMob;
+                        return e('th',{ key:h, style:{ padding:isMob?'8px 6px':'8px 12px', color:theme.textSecondary, fontSize:isMob?10:11, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5, whiteSpace:'nowrap', display:hideCol?'none':'table-cell' } },h);
                       })
                     )
                   ),
                   e('tbody',null,
                     data.pagos.map(function(p,i){
                       return e('tr',{ key:p.id, style:{ background:i%2===0?theme.surface:theme.bg } },
-                        e('td',{ style:{ padding:'10px 12px', color:theme.textSecondary, fontSize:13, fontWeight:600, borderRadius:'8px 0 0 8px' } },i+1),
-                        e('td',{ style:{ padding:'10px 12px', color:theme.text, fontSize:13 } },p.fecha),
-                        e('td',{ style:{ padding:'10px 12px', color:theme.accent, fontSize:14, fontWeight:700, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } },fmt(p.monto)),
-                        e('td',{ style:{ padding:'10px 12px', color:theme.text, fontSize:13, textTransform:'capitalize' } },p.metodo),
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.textSecondary, fontSize:isMob?12:13, fontWeight:600, borderRadius:'8px 0 0 8px' } },i+1),
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.text, fontSize:isMob?12:13 } },p.fecha),
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.accent, fontSize:isMob?13:14, fontWeight:700, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } },fmt(p.monto)),
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.text, fontSize:isMob?12:13, textTransform:'capitalize', display:isMob?'none':'' } },p.metodo),
                         e('td',{ style:{ padding:'10px 12px' } },
                           p.comprobante
                             ? e('button',{ onClick:function(){ setPreviewComp({data:p.comprobante,nombre:p.comprobanteNombre}); }, style:{ background:'none', border:'none', color:theme.accent, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4, padding:0 } }, e(Eye,{size:14}), (p.comprobanteNombre||'').slice(0,15)||'Ver')
                             : e('span',{ style:{ color:theme.textSecondary, fontSize:12 } },'—')
                         ),
-                        e('td',{ style:{ padding:'10px 12px', color:theme.textSecondary, fontSize:12, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' } },p.notas||'—'),
-                        e('td',{ style:{ padding:'10px 12px', borderRadius:'0 8px 8px 0', whiteSpace:'nowrap' } },
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.textSecondary, fontSize:12, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:isMob?'none':'' } },p.notas||'—'),
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', borderRadius:'0 8px 8px 0', whiteSpace:'nowrap' } },
                           p.historial&&p.historial.length>0 && e('button',{ onClick:function(){ setShowHistory(i); }, style:{ background:'none', border:'none', color:theme.textSecondary, cursor:'pointer', padding:4 }, title:'Historial' }, e(History,{size:14})),
                           e('button',{ onClick:function(){ openEdit(i); }, style:{ background:'none', border:'none', color:theme.textSecondary, cursor:'pointer', padding:4 } }, e(Edit3,{size:15})),
                           e('button',{ onClick:function(){ deletePago(i); }, style:{ background:'none', border:'none', color:theme.danger, cursor:'pointer', padding:4 } }, e(Trash2,{size:15}))
@@ -1126,7 +1115,7 @@
         e(ConfirmDialog,null),
         e(VencimientoAlert,{ vencimientos:vencimientos, nombre:data.nombre }),
 
-        e('div',{ style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:12, marginBottom:20 } },
+        e('div',{ style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12, marginBottom:20 } },
           e(StatCard,{ label:'Deuda Pendiente', value:fmt(totalPendiente), icon:CreditCard }),
           e(StatCard,{ label:'Pagado Total', value:fmt(pagosMensuales.reduce(function(s,p){ return s+p.monto; },0)), icon:Check, accent:theme.success }),
           e(StatCard,{ label:'Este Mes', value:fmt(mesActualData.total), icon:Calendar, accent:theme.accent }),
@@ -1148,7 +1137,7 @@
               var estado=pago?(pago.monto>=md.total?'pagado':'parcial'):'pendiente';
               var venc=vencimientos[mes];
               var diasVenc=venc?daysUntil(venc):null;
-              return e('div',{ key:mes, style:{ background:theme.bg, border:'1px solid '+theme.border, borderRadius:12, padding:16, minWidth:185, flex:'1 1 185px', borderTop:'3px solid '+(estado==='pagado'?theme.success:estado==='parcial'?theme.warning:theme.accent) } },
+              return e('div',{ key:mes, style:{ background:theme.bg, border:'1px solid '+theme.border, borderRadius:12, padding:16, minWidth:155, flex:'1 1 calc(50% - 6px)', borderTop:'3px solid '+(estado==='pagado'?theme.success:estado==='parcial'?theme.warning:theme.accent) } },
                 e('div',{ style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 } },
                   e('div',{ style:{ fontSize:14, fontWeight:700, color:theme.text } }, monthNames[m-1]+' '+y),
                   e('div',{ style:{ display:'flex', gap:2 } },
@@ -1187,9 +1176,9 @@
 
         e(Card,{ style:{ marginBottom:20 } },
           e('div',{ style:{ display:'flex', flexWrap:'wrap', gap:12, alignItems:'flex-end' } },
-            e('div',{ style:{ flex:'1 1 200px' } }, e(Input,{ label:'Buscar', value:searchQ, onChange:setSearchQ, placeholder:'Descripción...', style:{ marginBottom:0 } })),
-            e('div',{ style:{ flex:'1 1 150px' } }, e(Select,{ label:'Mes', value:filterMes, onChange:setFilterMes, options:[{value:'',label:'Todos'}].concat(mesesConDatos.map(function(m){ var p=m.split('-').map(Number); return {value:m,label:monthNames[p[1]-1]+' '+p[0]}; })) })),
-            e('div',{ style:{ flex:'1 1 150px' } }, e(Select,{ label:'Categoría', value:filterCat, onChange:setFilterCat, options:[{value:'',label:'Todas'}].concat(categorias) }))
+            e('div',{ style:{ flex:window.innerWidth<600?'1 1 100%':'1 1 200px' } }, e(Input,{ label:'Buscar', value:searchQ, onChange:setSearchQ, placeholder:'Descripción...', style:{ marginBottom:0 } })),
+            e('div',{ style:{ flex:window.innerWidth<600?'1 1 100%':'1 1 150px' } }, e(Select,{ label:'Mes', value:filterMes, onChange:setFilterMes, options:[{value:'',label:'Todos'}].concat(mesesConDatos.map(function(m){ var p=m.split('-').map(Number); return {value:m,label:monthNames[p[1]-1]+' '+p[0]}; })) })),
+            e('div',{ style:{ flex:window.innerWidth<600?'1 1 100%':'1 1 150px' } }, e(Select,{ label:'Categoría', value:filterCat, onChange:setFilterCat, options:[{value:'',label:'Todas'}].concat(categorias) }))
           )
         ),
 
@@ -1269,21 +1258,7 @@
     }
 
     function CreditosModule() {
-      var theme = useContext(ThemeContext);
-      var tab = useState('naranjax'); var activeTab=tab[0],setTab=tab[1];
-      return e('div',null,
-        e('div',{ style:{ display:'flex', gap:4, marginBottom:20, background:theme.surface, borderRadius:14, padding:4, border:'1px solid '+theme.border } },
-          [{id:'naranjax',label:'🟠 Naranja X',desc:'Tarjeta de crédito'},{id:'mercadocredito',label:'🔵 Mercado Crédito',desc:'Crédito personal'}].map(function(t){
-            return e('button',{ key:t.id, onClick:function(){ setTab(t.id); }, style:{ flex:1, padding:'12px 16px', borderRadius:10, border:'none', cursor:'pointer', background:activeTab===t.id?theme.accent:'transparent', color:activeTab===t.id?'#fff':theme.textSecondary, transition:'all 0.2s ease', fontFamily:"'Inter',system-ui,sans-serif", fontSize:14, fontWeight:600 } },
-              e('div',null,t.label),
-              e('div',{ style:{ fontSize:11, fontWeight:400, opacity:0.8, marginTop:2 } },t.desc)
-            );
-          })
-        ),
-        activeTab==='naranjax'
-          ? e(CreditoModule,{ storageKey:'deudatracker_naranjax', defaultData:defaultNaranjaX })
-          : e(CreditoModule,{ storageKey:'deudatracker_mercadocredito', defaultData:defaultMercadoCredito })
-      );
+      return e(CreditoModule, { storageKey: 'deudatracker_naranjax', defaultData: defaultNaranjaX });
     }
 
     // ============================================================
@@ -1342,7 +1317,7 @@
             e(QuotaListener, null),
             e('div', { style: { minHeight:'100vh', background:theme.bg, color:theme.text, fontFamily:"'Inter',system-ui,-apple-system,sans-serif", transition:'background 0.3s ease, color 0.3s ease' } },
 
-              e('header', { style: { position:'sticky', top:0, zIndex:100, background:theme.surface+'ee', backdropFilter:'blur(12px)', borderBottom:'1px solid '+theme.border, padding:'0 20px' } },
+              e('header', { style: { position:'sticky', top:0, zIndex:100, background:theme.surface+'ee', backdropFilter:'blur(12px)', borderBottom:'1px solid '+theme.border, padding:isMobile?'0 12px':'0 20px' } },
                 e('div', { style: { maxWidth:960, margin:'0 auto', display:'flex', alignItems:'center', height:64, gap:16 } },
                   e('div', { style: { display:'flex', alignItems:'center', gap:10, flexShrink:0 } },
                     e('div', { style: { width:36, height:36, borderRadius:10, background:'linear-gradient(135deg, '+theme.accent+', '+theme.accentHover+')', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:16 } }, 'D'),
@@ -1352,7 +1327,7 @@
                   ),
                   e('nav', { style: { display:'flex', gap:4, flex:1, justifyContent:'center' } },
                     [{id:'prestamo',label:'🏍️ Préstamo'},{id:'creditos',label:'💳 Créditos'}].map(function(t){
-                      return e('button',{ key:t.id, onClick:function(){ setActiveTab(t.id); }, style:{ padding:'8px 20px', borderRadius:10, border:'none', cursor:'pointer', background:activeTab===t.id?theme.accent+'20':'transparent', color:activeTab===t.id?theme.accent:theme.textSecondary, fontWeight:600, fontSize:14, transition:'all 0.2s ease', fontFamily:"'Inter',system-ui,sans-serif" } }, t.label);
+                      return e('button',{ key:t.id, onClick:function(){ setActiveTab(t.id); }, style:{ padding:isMobile?'6px 12px':'8px 20px', borderRadius:10, border:'none', cursor:'pointer', background:activeTab===t.id?theme.accent+'20':'transparent', color:activeTab===t.id?theme.accent:theme.textSecondary, fontWeight:600, fontSize:isMobile?13:14, transition:'all 0.2s ease', fontFamily:"'Inter',system-ui,sans-serif" } }, t.label);
                     })
                   ),
                   e('button', { onClick:function(){ setIsDark(function(d){ return !d; }); }, style: { background:theme.bg, border:'1px solid '+theme.border, borderRadius:10, width:40, height:40, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:theme.textSecondary, transition:'all 0.2s ease', flexShrink:0 } },
@@ -1361,7 +1336,7 @@
                 )
               ),
 
-              e('main', { style: { maxWidth:960, margin:'0 auto', padding:'24px 20px 100px' } },
+              e('main', { style: { maxWidth:960, margin:'0 auto', padding:isMobile?'16px 12px 100px':'24px 20px 100px' } },
                 activeTab==='prestamo' ? e(PrestamoModule,null) : e(CreditosModule,null)
               ),
 
