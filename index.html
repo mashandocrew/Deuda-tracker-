@@ -647,18 +647,37 @@
 
     function ComprobantePreview(props) {
       var theme = useContext(ThemeContext);
-      if (!props.data) return null;
-      var isImage = props.data.startsWith('data:image');
-      return e(Modal, { open:true, onClose:props.onClose, title:props.nombre||'Comprobante', wide:true },
+      var suState = useState(null); var signedUrl=suState[0],setSignedUrl=suState[1];
+      var loadingState = useState(!!props.storageUrl); var loadingUrl=loadingState[0],setLoadingUrl=loadingState[1];
+
+      useEffect(function(){
+        if (!props.storageUrl) return;
+        setLoadingUrl(true);
+        sb.storage.from('comprobantes').createSignedUrl(props.storageUrl, 3600).then(function(r){
+          setLoadingUrl(false);
+          if (r.error) { setSignedUrl(null); } else { setSignedUrl(r.data.signedUrl); }
+        });
+      }, [props.storageUrl]);
+
+      if (!props.storageUrl && !props.data) return null;
+      var src = props.storageUrl ? signedUrl : props.data;
+      var nombre = props.nombre || 'comprobante';
+      var isImage = src ? (src.startsWith('data:image') || /\.(jpg|jpeg|png|gif|webp)/i.test(nombre)) : true;
+
+      return e(Modal, { open:true, onClose:props.onClose, title:nombre, wide:true },
         e('div', { style:{ textAlign:'center' } },
-          isImage
-            ? e('img',{ src:props.data, alt:'Comprobante', style:{ maxWidth:'100%', maxHeight:'60vh', borderRadius:12, border:'1px solid '+theme.border } })
-            : e('div',{ style:{ padding:40, color:theme.textSecondary } },
-                e(Download,{size:48,style:{marginBottom:12,opacity:0.4}}),
-                e('p',{style:{margin:'0 0 16px'}},'Archivo PDF — descargalo para verlo.')
-              ),
-          e('div',{ style:{ marginTop:16, display:'flex', gap:12, justifyContent:'center' } },
-            e('a',{ href:props.data, download:props.nombre||'comprobante', style:{ textDecoration:'none' } },
+          loadingUrl
+            ? e('div',{ style:{ padding:40, color:theme.textSecondary } },'Cargando...')
+            : src
+              ? (isImage
+                  ? e('img',{ src:src, alt:'Comprobante', style:{ maxWidth:'100%', maxHeight:'60vh', borderRadius:12, border:'1px solid '+theme.border } })
+                  : e('div',{ style:{ padding:40, color:theme.textSecondary } },
+                      e(Download,{size:48,style:{marginBottom:12,opacity:0.4}}),
+                      e('p',{style:{margin:'0 0 16px'}},'Archivo — descargalo para verlo.')
+                    ))
+              : e('div',{ style:{ padding:40, color:theme.danger } },'No se pudo cargar el comprobante.'),
+          src && e('div',{ style:{ marginTop:16, display:'flex', gap:12, justifyContent:'center' } },
+            e('a',{ href:src, download:nombre, target:'_blank', rel:'noopener noreferrer', style:{ textDecoration:'none' } },
               e(Btn,{ secondary:true, small:true }, e(Download,{size:14}), ' Descargar')
             ),
             e(Btn,{ secondary:true, small:true, onClick:props.onClose },'Cerrar')
@@ -730,7 +749,8 @@
       var em = useState(false); var editingMonto=em[0],setEditingMonto=em[1];
       var pc = useState(null); var previewComp=pc[0],setPreviewComp=pc[1];
       var sh = useState(null); var showHistory=sh[0],setShowHistory=sh[1];
-      var fs = useState({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobante:null, comprobanteNombre:'', notas:'' });
+      var uf = useState(false); var uploadingFile=uf[0],setUploadingFile=uf[1];
+      var fs = useState({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobanteUrl:null, comprobanteNombre:'', notas:'' });
       var form=fs[0],setForm=fs[1];
       var fileRef = useRef();
 
@@ -758,16 +778,16 @@
 
       useEffect(function(){
         if (quickPayOpen){
-          setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobante:null, comprobanteNombre:'', notas:'' });
+          setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobanteUrl:null, comprobanteNombre:'', notas:'' });
           setEditIdx(null); setShowModal(true); setQuickPayOpen(false);
         }
       }, [quickPayOpen]);
 
-      function resetForm(){ setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobante:null, comprobanteNombre:'', notas:'' }); }
+      function resetForm(){ setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobanteUrl:null, comprobanteNombre:'', notas:'' }); }
       function openAdd(){ resetForm(); setEditIdx(null); setShowModal(true); }
       function openEdit(i){
         var p=data.pagos[i];
-        setForm({ fecha:p.fecha, monto:String(p.monto), metodo:p.metodo, comprobante:p.comprobante||null, comprobanteNombre:p.comprobanteNombre||'', notas:p.notas||'' });
+        setForm({ fecha:p.fecha, monto:String(p.monto), metodo:p.metodo, comprobanteUrl:p.comprobanteUrl||null, comprobanteNombre:p.comprobanteNombre||'', notas:p.notas||'' });
         setEditIdx(i); setShowModal(true);
       }
 
@@ -775,9 +795,18 @@
         var file=ev.target.files && ev.target.files[0];
         if (!file) return;
         if (file.size>5*1024*1024){ toast('Archivo demasiado grande (máx 5MB)','error'); return; }
-        var reader=new FileReader();
-        reader.onload=function(){ setForm(function(f){ return Object.assign({},f,{ comprobante:reader.result, comprobanteNombre:file.name }); }); };
-        reader.readAsDataURL(file);
+        setUploadingFile(true);
+        sb.auth.getUser().then(function(r){
+          var userId = r.data.user.id;
+          var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          var path = userId+'/'+data.id+'/'+Date.now()+'_'+safeName;
+          sb.storage.from('comprobantes').upload(path, file, { contentType:file.type }).then(function(res){
+            setUploadingFile(false);
+            if (res.error){ toast('Error subiendo comprobante: '+res.error.message,'error'); return; }
+            setForm(function(f){ return Object.assign({},f,{ comprobanteUrl:path, comprobanteNombre:file.name }); });
+            toast('Comprobante subido');
+          });
+        });
       }
 
       function savePago(){
@@ -788,9 +817,9 @@
         if (editIdx!==null){
           var prev=data.pagos[editIdx];
           var histEntry={ timestamp:now, descripcion:'Editado: monto '+fmt(prev.monto)+' a '+fmt(monto)+', fecha '+prev.fecha+' a '+form.fecha };
-          pago=Object.assign({},prev,{ fecha:form.fecha, monto:monto, metodo:form.metodo, comprobante:form.comprobante, comprobanteNombre:form.comprobanteNombre, notas:form.notas, historial:(prev.historial||[]).concat([histEntry]) });
+          pago=Object.assign({},prev,{ fecha:form.fecha, monto:monto, metodo:form.metodo, comprobanteUrl:form.comprobanteUrl, comprobanteNombre:form.comprobanteNombre, notas:form.notas, historial:(prev.historial||[]).concat([histEntry]) });
         } else {
-          pago={ id:uid(), fecha:form.fecha, monto:monto, metodo:form.metodo, comprobante:form.comprobante, comprobanteNombre:form.comprobanteNombre, notas:form.notas, historial:[{ timestamp:now, descripcion:'Creado: '+fmt(monto)+' el '+form.fecha }] };
+          pago={ id:uid(), fecha:form.fecha, monto:monto, metodo:form.metodo, comprobanteUrl:form.comprobanteUrl, comprobanteNombre:form.comprobanteNombre, notas:form.notas, historial:[{ timestamp:now, descripcion:'Creado: '+fmt(monto)+' el '+form.fecha }] };
         }
         var pagos=data.pagos.slice();
         if (editIdx!==null) pagos[editIdx]=pago; else pagos.push(pago);
@@ -803,6 +832,10 @@
       function deletePago(i){
         confirm('¿Eliminar el pago #'+(i+1)+' de '+fmt(data.pagos[i].monto)+'?').then(function(ok){
           if (!ok) return;
+          var pagoAEliminar = data.pagos[i];
+          if (pagoAEliminar.comprobanteUrl) {
+            sb.storage.from('comprobantes').remove([pagoAEliminar.comprobanteUrl]).catch(function(){});
+          }
           setData(function(d){ return Object.assign({},d,{ pagos:d.pagos.filter(function(_,j){ return j!==i; }) }); });
           toast('Pago eliminado');
         });
@@ -910,8 +943,8 @@
                         e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.accent, fontSize:isMob?13:14, fontWeight:700, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } },fmt(p.monto)),
                         e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.text, fontSize:isMob?12:13, textTransform:'capitalize', display:isMob?'none':'' } },p.metodo),
                         e('td',{ style:{ padding:'10px 12px' } },
-                          p.comprobante
-                            ? e('button',{ onClick:function(){ setPreviewComp({data:p.comprobante,nombre:p.comprobanteNombre}); }, style:{ background:'none', border:'none', color:theme.accent, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4, padding:0 } }, e(Eye,{size:14}), (p.comprobanteNombre||'').slice(0,15)||'Ver')
+                          (p.comprobanteUrl||p.comprobante)
+                            ? e('button',{ onClick:function(){ setPreviewComp({storageUrl:p.comprobanteUrl||null,data:p.comprobante||null,nombre:p.comprobanteNombre}); }, style:{ background:'none', border:'none', color:theme.accent, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4, padding:0 } }, e(Eye,{size:14}), (p.comprobanteNombre||'').slice(0,15)||'Ver')
                             : e('span',{ style:{ color:theme.textSecondary, fontSize:12 } },'—')
                         ),
                         e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.textSecondary, fontSize:12, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:isMob?'none':'' } },p.notas||'—'),
@@ -936,7 +969,7 @@
             e('label',{ style:{ display:'block', color:theme.textSecondary, fontSize:12, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 } },'Comprobante'),
             e('input',{ ref:fileRef, type:'file', accept:'image/*,.pdf', onChange:handleFile, style:{ display:'none' } }),
             e(Btn,{ secondary:true, small:true, onClick:function(){ fileRef.current&&fileRef.current.click(); } }, e(Paperclip,{size:14}), form.comprobanteNombre||'Adjuntar archivo'),
-            form.comprobante && e('span',{ style:{ color:theme.success, fontSize:12, marginLeft:10 } },'✓ Cargado')
+            uploadingFile ? e('span',{ style:{ color:theme.textSecondary, fontSize:12, marginLeft:10 } },'Subiendo...') : (form.comprobanteUrl && e('span',{ style:{ color:theme.success, fontSize:12, marginLeft:10 } },'✓ Subido'))
           ),
           e('div',{ style:{ display:'flex', gap:12, justifyContent:'flex-end', marginTop:20 } },
             e(Btn,{ secondary:true, onClick:function(){ setShowModal(false); } },'Cancelar'),
@@ -1023,7 +1056,7 @@
         var pags = (pagosByLoan[prestamoId]||[]).map(function(pag){
           var meta = {};
           try { meta = JSON.parse(pag.descripcion||'{}'); } catch(e){ meta = { notas: pag.descripcion||'' }; }
-          return { id:pag.id, fecha:pag.fecha, monto:pag.monto, metodo:meta.metodo||'efectivo', comprobante:meta.comprobante||null, comprobanteNombre:meta.comprobanteNombre||'', notas:meta.notas||'', historial:meta.historial||[] };
+          return { id:pag.id, fecha:pag.fecha, monto:pag.monto, metodo:meta.metodo||'efectivo', comprobanteUrl:meta.comprobanteUrl||null, comprobante:meta.comprobante||null, comprobanteNombre:meta.comprobanteNombre||'', notas:meta.notas||'', historial:meta.historial||[] };
         });
         return { id:p.id, nombre:p.nombre, acreedor:p.acreedor||'', montoTotal:p.monto_total||0, fechaInicio:p.fecha_inicio||todayStr(), estado:p.estado||'en_curso', icono:p.icono||'moto', pagos:pags };
       }
@@ -1044,7 +1077,7 @@
           var curIds=current.pagos.map(function(p){ return p.id; });
           var nxtIds=next.pagos.map(function(p){ return p.id; });
           // Optimistic local update
-          var newSbPags = next.pagos.map(function(p){ return { id:p.id, prestamo_id:prestamoId, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',historial:p.historial||[]}) }; });
+          var newSbPags = next.pagos.map(function(p){ return { id:p.id, prestamo_id:prestamoId, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobanteUrl:p.comprobanteUrl||null,historial:p.historial||[]}) }; });
           setPagosByLoan(function(bl){ return Object.assign({},bl,(function(o){ o[prestamoId]=newSbPags; return o; })({})); });
           // Deletes
           curIds.forEach(function(id){ if(nxtIds.indexOf(id)===-1) sb.from('pagos').delete().eq('id',id).then(function(){}); });
@@ -1053,7 +1086,7 @@
             var uid2=r.data.user.id;
             var inserts = next.pagos.filter(function(p){ return curIds.indexOf(p.id)===-1; });
             var ps = inserts.map(function(p){
-              return sb.from('pagos').insert({ prestamo_id:prestamoId, user_id:uid2, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobante:p.comprobante||null,historial:p.historial||[]}) })
+              return sb.from('pagos').insert({ prestamo_id:prestamoId, user_id:uid2, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobanteUrl:p.comprobanteUrl||null,historial:p.historial||[]}) })
                 .then(function(r){ if(r&&r.error) console.error('[pagos insert]',r.error); });
             });
             if(ps.length>0) Promise.all(ps).then(function(){ loadData(); });
@@ -1063,7 +1096,7 @@
             if(curIds.indexOf(p.id)!==-1){
               var prev=current.pagos.find(function(pp){ return pp.id===p.id; });
               if(JSON.stringify(prev)!==JSON.stringify(p)){
-                sb.from('pagos').update({ monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobante:p.comprobante||null,historial:p.historial||[]}) }).eq('id',p.id).then(function(){});
+                sb.from('pagos').update({ monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobanteUrl:p.comprobanteUrl||null,historial:p.historial||[]}) }).eq('id',p.id).then(function(){});
               }
             }
           });
