@@ -279,6 +279,12 @@
       if (n == null || isNaN(n)) return '$0';
       return '$' + Math.round(Number(n)).toLocaleString('es-AR');
     }
+    function fmtFecha(f) {
+      if (!f) return '—';
+      var p = f.split('-');
+      if (p.length !== 3) return f;
+      return p[2]+'/'+p[1]+'/'+p[0];
+    }
     function parseArgNum(s) {
       if (typeof s === 'number') return s;
       return Number(String(s).replace(/[^0-9]/g, '')) || 0;
@@ -932,25 +938,22 @@
                 e('table',{ style:{ width:'100%', borderCollapse:'separate', borderSpacing:'0 6px' } },
                   e('thead',null,
                     e('tr',{ style:{ textAlign:'left' } },
-                      ['#','Fecha','Monto','Método','Comprobante','Notas',''].map(function(h){
-                        var hideCol = (h==='Método'||h==='Notas') && isMob;
-                        return e('th',{ key:h, style:{ padding:isMob?'8px 6px':'8px 12px', color:theme.textSecondary, fontSize:isMob?10:11, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5, whiteSpace:'nowrap', display:hideCol?'none':'table-cell' } },h);
+                      ['Fecha','Monto','Descripción','Comprobante',''].map(function(h){
+                        return e('th',{ key:h, style:{ padding:isMob?'8px 6px':'8px 12px', color:theme.textSecondary, fontSize:isMob?10:11, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5, whiteSpace:'nowrap' } },h);
                       })
                     )
                   ),
                   e('tbody',null,
                     data.pagos.map(function(p,i){
                       return e('tr',{ key:p.id, style:{ background:i%2===0?theme.surface:theme.bg } },
-                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.textSecondary, fontSize:isMob?12:13, fontWeight:600, borderRadius:'8px 0 0 8px' } },i+1),
-                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.text, fontSize:isMob?12:13 } },p.fecha),
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.text, fontSize:isMob?12:13, borderRadius:'8px 0 0 8px', whiteSpace:'nowrap' } },fmtFecha(p.fecha)),
                         e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.accent, fontSize:isMob?13:14, fontWeight:700, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } },fmt(p.monto)),
-                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.text, fontSize:isMob?12:13, textTransform:'capitalize', display:isMob?'none':'' } },p.metodo),
+                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.textSecondary, fontSize:12, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' } },p.notas||'—'),
                         e('td',{ style:{ padding:'10px 12px' } },
                           (p.comprobanteUrl||p.comprobante)
                             ? e('button',{ onClick:function(){ setPreviewComp({storageUrl:p.comprobanteUrl||null,data:p.comprobante||null,nombre:p.comprobanteNombre}); }, style:{ background:'none', border:'none', color:theme.accent, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:4, padding:0 } }, e(Eye,{size:14}), (p.comprobanteNombre||'').slice(0,15)||'Ver')
                             : e('span',{ style:{ color:theme.textSecondary, fontSize:12 } },'—')
                         ),
-                        e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', color:theme.textSecondary, fontSize:12, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display:isMob?'none':'' } },p.notas||'—'),
                         e('td',{ style:{ padding:isMob?'8px 6px':'10px 12px', borderRadius:'0 8px 8px 0', whiteSpace:'nowrap' } },
                           p.historial&&p.historial.length>0 && e('button',{ onClick:function(){ setShowHistory(i); }, style:{ background:'none', border:'none', color:theme.textSecondary, cursor:'pointer', padding:4 }, title:'Historial' }, e(History,{size:14})),
                           e('button',{ onClick:function(){ openEdit(i); }, style:{ background:'none', border:'none', color:theme.textSecondary, cursor:'pointer', padding:4 } }, e(Edit3,{size:15})),
