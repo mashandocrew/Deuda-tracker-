@@ -56,6 +56,14 @@
     @media (max-width: 480px) {
       [data-statcard] { transform: none !important; }
     }
+    @keyframes slideCarouselFromRight {
+      from { transform: translateX(100%); }
+      to   { transform: translateX(0%); }
+    }
+    @keyframes slideCarouselFromLeft {
+      from { transform: translateX(-100%); }
+      to   { transform: translateX(0%); }
+    }
   </style>
 </head>
 <body>
@@ -206,6 +214,237 @@
       }, [data, theme]);
       return createElement('div', { style: { height: 220, position: 'relative' } },
         createElement('canvas', { ref: canvasRef })
+      );
+    }
+
+    function PaymentsBarChart(props) {
+      var data = props.data, theme = props.theme;
+      var canvasRef = useRef(null);
+      var chartRef = useRef(null);
+      useEffect(function() {
+        if (!canvasRef.current || !data || data.length === 0) return;
+        if (chartRef.current) chartRef.current.destroy();
+        var filtered = data.filter(function(d){ return d.pagado > 0; });
+        if (filtered.length === 0) return;
+        chartRef.current = new Chart(canvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: filtered.map(function(d){ return d.name; }),
+            datasets: [{
+              label: 'Pago',
+              data: filtered.map(function(d){ return d.pagado; }),
+              backgroundColor: theme.success + '80',
+              borderColor: theme.success,
+              borderWidth: 1.5,
+              borderRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx){ return '$' + Math.round(ctx.raw).toLocaleString('es-AR'); }
+                },
+                backgroundColor: theme.surface,
+                titleColor: theme.text,
+                bodyColor: theme.text,
+                borderColor: theme.border,
+                borderWidth: 1,
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: theme.textSecondary, font: { size: 11 } },
+                grid: { color: theme.border + '40' }
+              },
+              y: {
+                ticks: {
+                  color: theme.textSecondary, font: { size: 11 },
+                  callback: function(v){
+                    if (v >= 1000000) return '$' + (v/1000000).toFixed(1) + 'M';
+                    if (v >= 1000) return '$' + (v/1000).toFixed(0) + 'k';
+                    return '$' + v;
+                  }
+                },
+                grid: { color: theme.border + '40' }
+              }
+            }
+          }
+        });
+        return function() { if (chartRef.current) chartRef.current.destroy(); };
+      }, [data, theme]);
+      return createElement('div', { style: { height: 220, position: 'relative' } },
+        createElement('canvas', { ref: canvasRef })
+      );
+    }
+
+    function ChartCarousel(props) {
+      var slides = props.slides;
+      var theme = useContext(ThemeContext);
+      var total = slides.length;
+
+      var idxState = useState(0);
+      var idx = idxState[0], setIdx = idxState[1];
+
+      var animState = useState(null);
+      var animDir = animState[0], setAnimDir = animState[1];
+
+      var isAnimating = useRef(false);
+      var trackRef = useRef(null);
+      var touchStart = useRef(null);
+      var touchDelta = useRef(0);
+
+      var isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+      function goTo(newIdx, dir) {
+        if (isAnimating.current) return;
+        isAnimating.current = true;
+        setAnimDir(dir);
+        setTimeout(function() {
+          setIdx(((newIdx % total) + total) % total);
+          setAnimDir(null);
+          isAnimating.current = false;
+        }, 320);
+      }
+
+      function prev() { goTo(idx - 1, 'right'); }
+      function next() { goTo(idx + 1, 'left'); }
+
+      useEffect(function() {
+        function onKey(ev) {
+          if (ev.key === 'ArrowLeft') prev();
+          if (ev.key === 'ArrowRight') next();
+        }
+        window.addEventListener('keydown', onKey);
+        return function() { window.removeEventListener('keydown', onKey); };
+      }, [idx]);
+
+      var nextIdx = animDir === 'left'
+        ? ((idx + 1) % total)
+        : animDir === 'right'
+          ? ((idx - 1 + total) % total)
+          : idx;
+
+      var slideStyle = {
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        transition: 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1)',
+      };
+
+      var currentTranslate = animDir === 'left' ? '-100%' : animDir === 'right' ? '100%' : '0%';
+
+      var arrowBtnStyle = {
+        position: 'absolute',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        zIndex: 10,
+        background: theme.surface,
+        border: '1px solid ' + theme.border,
+        borderRadius: '50%',
+        width: 36, height: 36,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+        color: theme.text,
+        fontSize: 18, fontWeight: 700,
+        lineHeight: 1,
+        userSelect: 'none',
+        transition: 'background 0.15s ease',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+      };
+
+      return e('div', { style: { position: 'relative' } },
+
+        e('div', {
+          style: {
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 16,
+          }
+        },
+          e('h4', {
+            style: {
+              color: theme.text, margin: 0, fontSize: 16, fontWeight: 700,
+              transition: 'opacity 0.2s ease',
+              opacity: animDir ? 0.4 : 1,
+            }
+          }, slides[idx].title),
+
+          e('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+            slides.map(function(_, i) {
+              return e('div', {
+                key: i,
+                onClick: function() {
+                  if (i === idx) return;
+                  goTo(i, i > idx ? 'left' : 'right');
+                },
+                style: {
+                  width: i === idx ? 18 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  background: i === idx ? theme.accent : theme.border,
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                }
+              });
+            })
+          )
+        ),
+
+        e('div', {
+          ref: trackRef,
+          style: {
+            position: 'relative',
+            height: 220,
+            overflow: 'hidden',
+            borderRadius: 8,
+          },
+          onTouchStart: isMobile ? function(ev) {
+            touchStart.current = ev.touches[0].clientX;
+            touchDelta.current = 0;
+          } : undefined,
+          onTouchMove: isMobile ? function(ev) {
+            if (touchStart.current === null) return;
+            touchDelta.current = ev.touches[0].clientX - touchStart.current;
+          } : undefined,
+          onTouchEnd: isMobile ? function() {
+            if (touchDelta.current < -40) next();
+            else if (touchDelta.current > 40) prev();
+            touchStart.current = null;
+            touchDelta.current = 0;
+          } : undefined,
+        },
+
+          e('div', {
+            key: 'current-' + idx,
+            style: Object.assign({}, slideStyle, {
+              transform: 'translateX(' + currentTranslate + ')',
+            })
+          }, slides[idx].chart),
+
+          animDir && e('div', {
+            key: 'incoming-' + nextIdx,
+            style: Object.assign({}, slideStyle, {
+              transform: 'translateX(0%)',
+              animation: 'slideCarousel' + (animDir === 'left' ? 'FromRight' : 'FromLeft') + ' 0.32s cubic-bezier(0.4,0,0.2,1) forwards',
+            })
+          }, slides[nextIdx].chart)
+        ),
+
+        !isMobile && e('button', {
+          onClick: prev,
+          style: Object.assign({}, arrowBtnStyle, { left: -18 }),
+          onMouseEnter: function(ev){ ev.currentTarget.style.background = theme.accent + '22'; },
+          onMouseLeave: function(ev){ ev.currentTarget.style.background = theme.surface; },
+          'aria-label': 'Grafico anterior',
+        }, '←'),
+        !isMobile && e('button', {
+          onClick: next,
+          style: Object.assign({}, arrowBtnStyle, { right: -18 }),
+          onMouseEnter: function(ev){ ev.currentTarget.style.background = theme.accent + '22'; },
+          onMouseLeave: function(ev){ ev.currentTarget.style.background = theme.surface; },
+          'aria-label': 'Grafico siguiente',
+        }, '→')
       );
     }
 
@@ -1235,9 +1474,19 @@
           }),
         ] }),
 
-        data.pagos.length>0 && e(Card,{ style:{ marginBottom:20 } },
-          e('h4',{ style:{ color:theme.text, marginTop:0, marginBottom:16, fontSize:16, fontWeight:700 } },'Evolución de la deuda'),
-          e(DebtAreaChart, { data: chartData, theme: theme })
+        data.pagos.length>0 && e(Card,{ style:{ marginBottom:20, overflow:'visible' } },
+          e(ChartCarousel, {
+            slides: [
+              {
+                title: 'Evolución de la deuda',
+                chart: e(DebtAreaChart, { data: chartData, theme: theme }),
+              },
+              {
+                title: 'Evolución de los pagos',
+                chart: e(PaymentsBarChart, { data: chartData, theme: theme }),
+              },
+            ]
+          })
         ),
 
         e(Card,null,
