@@ -45,6 +45,17 @@
     ::-webkit-scrollbar-thumb { background: #333333; border-radius: 4px; }
     #root { min-height: 100vh; }
     #loading { position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a1a;color:#ececec;font-family:'Inter',sans-serif;font-size:16px;z-index:9999; }
+    @supports not (backdrop-filter: blur(1px)) {
+      [data-statcard] > div:first-child {
+        background: rgba(40, 40, 40, 0.92) !important;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      [data-statcard] { transition: none !important; }
+    }
+    @media (max-width: 480px) {
+      [data-statcard] { transform: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -525,14 +536,191 @@
     function StatCard(props) {
       var theme = useContext(ThemeContext);
       var accent = props.accent || theme.accent;
-      return e('div', { style:{ background:theme.surface, border:'1px solid '+theme.border, borderRadius:14, padding:'18px 20px', display:'flex', alignItems:'center', gap:14, minWidth:0 } },
-        e('div', { style:{ width:42, height:42, borderRadius:12, background:accent+'18', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 } },
-          e(props.icon, { size:20, color:accent })
+      var ref = useRef(null);
+      var scaleState = useState(1);
+      var scale = scaleState[0], setScale = scaleState[1];
+      var expandedState = useState(false);
+      var expanded = expandedState[0], setExpanded = expandedState[1];
+
+      return e('div', {
+        ref: ref,
+        onClick: function() { setExpanded(function(v){ return !v; }); },
+        style: {
+          background: theme.bg === '#1a1a1a'
+            ? 'rgba(255,255,255,0.05)'
+            : 'rgba(255,255,255,0.55)',
+          backdropFilter: 'blur(18px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(18px) saturate(160%)',
+          border: '1px solid ' + (theme.bg === '#1a1a1a'
+            ? 'rgba(255,255,255,0.10)'
+            : 'rgba(255,255,255,0.75)'),
+          borderRadius: 18,
+          padding: expanded ? '20px 18px' : '16px 18px',
+          cursor: 'pointer',
+          transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, padding 0.2s ease',
+          transform: 'scale(' + scale + ')',
+          boxShadow: scale > 1.04
+            ? '0 12px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)'
+            : '0 2px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.08)',
+          userSelect: 'none',
+          minWidth: 0,
+          overflow: 'hidden',
+          position: 'relative',
+        }
+      },
+        e('div', {
+          style: {
+            position: 'absolute', inset: 0, borderRadius: 18,
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }
+        }),
+        e('div', { style: { position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 12 } },
+          e('div', {
+            style: {
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: accent + '22',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginTop: 2,
+            }
+          },
+            e(props.icon, { size: 18, color: accent })
+          ),
+          e('div', { style: { minWidth: 0, flex: 1 } },
+            e('div', {
+              style: {
+                color: theme.textSecondary, fontSize: 11, fontWeight: 600,
+                textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 4,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }
+            }, props.label),
+            e('div', {
+              style: {
+                color: theme.text, fontSize: 17, fontWeight: 700,
+                fontFamily: "'SFMono-Regular',ui-monospace,monospace",
+                lineHeight: 1.2,
+                wordBreak: 'break-all',
+                overflowWrap: 'anywhere',
+              }
+            }, props.value)
+          ),
+          e('div', {
+            style: {
+              color: theme.textSecondary, fontSize: 10, opacity: 0.5,
+              alignSelf: 'flex-start', paddingTop: 2, flexShrink: 0,
+            }
+          }, expanded ? '▲' : '▼')
         ),
-        e('div', { style:{ minWidth:0 } },
-          e('div', { style:{ color:theme.textSecondary, fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:0.6, marginBottom:2 } }, props.label),
-          e('div', { style:{ color:theme.text, fontSize:18, fontWeight:700, fontFamily:"'SFMono-Regular',ui-monospace,monospace", whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' } }, props.value)
-        )
+        expanded && props.detail && e('div', {
+          style: {
+            marginTop: 14,
+            paddingTop: 12,
+            borderTop: '1px solid ' + (theme.bg === '#1a1a1a'
+              ? 'rgba(255,255,255,0.08)'
+              : 'rgba(0,0,0,0.08)'),
+            position: 'relative',
+          }
+        },
+          props.detail.map(function(line, i) {
+            return e('div', {
+              key: i,
+              style: {
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '4px 0', fontSize: 13,
+              }
+            },
+              e('span', { style: { color: theme.textSecondary } }, line.label),
+              e('span', {
+                style: {
+                  color: line.accent ? accent : theme.text,
+                  fontFamily: line.mono !== false ? "'SFMono-Regular',ui-monospace,monospace" : 'inherit',
+                  fontWeight: 600, fontSize: 13,
+                }
+              }, line.value)
+            );
+          })
+        ),
+        expanded && !props.detail && e('div', {
+          style: {
+            marginTop: 12, paddingTop: 10,
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            fontSize: 12, color: theme.textSecondary, fontStyle: 'italic',
+          }
+        }, 'Sin detalle adicional disponible.')
+      );
+    }
+
+    function ProximityGrid(props) {
+      var containerRef = useRef(null);
+      var isMobile = window.matchMedia('(hover: none)').matches;
+      var validChildren = props.children.filter(Boolean);
+      var scalesState = useState(validChildren.map(function(){ return 1; }));
+      var scales = scalesState[0], setScales = scalesState[1];
+
+      useEffect(function() {
+        if (!containerRef.current) return;
+        var cards = containerRef.current.querySelectorAll('[data-statcard]');
+
+        function updateScales(clientX, clientY) {
+          var newScales = Array.from(cards).map(function(card) {
+            var rect = card.getBoundingClientRect();
+            var cx = rect.left + rect.width / 2;
+            var cy = rect.top + rect.height / 2;
+            var dist = Math.sqrt(Math.pow(clientX - cx, 2) + Math.pow(clientY - cy, 2));
+            var maxDist = 220;
+            var minScale = 0.96, maxScale = 1.07;
+            if (dist > maxDist) return minScale;
+            var t = 1 - (dist / maxDist);
+            return minScale + (maxScale - minScale) * t * t;
+          });
+          setScales(newScales);
+        }
+
+        function resetScales() {
+          setScales(Array.from(cards).map(function(){ return 1; }));
+        }
+
+        var container = containerRef.current;
+        if (!isMobile) {
+          container.addEventListener('mousemove', function(ev) { updateScales(ev.clientX, ev.clientY); });
+          container.addEventListener('mouseleave', resetScales);
+        } else {
+          function onScroll() {
+            var wH = window.innerHeight;
+            var newScales = Array.from(cards).map(function(card) {
+              var rect = card.getBoundingClientRect();
+              var cy = rect.top + rect.height / 2;
+              var dist = Math.abs(cy - wH / 2);
+              var maxDist = wH * 0.4;
+              var minScale = 0.97, maxScale = 1.05;
+              if (dist > maxDist) return minScale;
+              var t = 1 - (dist / maxDist);
+              return minScale + (maxScale - minScale) * t * t;
+            });
+            setScales(newScales);
+          }
+          window.addEventListener('scroll', onScroll, { passive: true });
+          onScroll();
+          return function() { window.removeEventListener('scroll', onScroll); };
+        }
+      }, [isMobile]);
+
+      return e('div', {
+        ref: containerRef,
+        style: {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))',
+          gap: 12,
+          marginBottom: 20,
+        }
+      },
+        validChildren.map(function(child, i) {
+          return e('div', {
+            key: i,
+            'data-statcard': true,
+            style: { transform: 'scale(' + (scales[i] || 1) + ')', transition: 'transform 0.22s cubic-bezier(0.34,1.56,0.64,1)' }
+          }, child);
+        })
       );
     }
 
@@ -1004,15 +1192,56 @@
           e('div',{ style:{ color:theme.textSecondary, fontSize:14, marginTop:4, fontFamily:"'SFMono-Regular',ui-monospace,monospace" } },'Pagaste '+fmt(totalPagado)+' de '+fmt(data.montoTotal))
         ),
 
-        e('div',{ style:{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12, marginBottom:20 } },
-          e(StatCard,{ label:'Total Pagado', value:fmt(totalPagado), icon:DollarSign }),
-          e(StatCard,{ label:'Saldo Restante', value:fmt(saldo), icon:TrendingDown, accent:theme.warning }),
-          e(StatCard,{ label:'Cuotas Pagadas', value:data.pagos.length, icon:Check, accent:theme.success }),
-          e(StatCard,{ label:'Promedio Cuota', value:fmt(promedio), icon:Calendar }),
-          data.pagos.length>0 && e(StatCard,{ label:'Cuota Más Alta', value:fmt(maxCuota), icon:ChevronUp }),
-          data.pagos.length>0 && e(StatCard,{ label:'Cuota Más Baja', value:fmt(minCuota), icon:ChevronDown }),
-          mesesRestantes&&saldo>0 && e(StatCard,{ label:'Proyección', value:'~'+mesesRestantes+' meses', icon:Clock, accent:theme.accent })
-        ),
+        e(ProximityGrid, { children: [
+          e(StatCard,{
+            label:'Total Pagado', value:fmt(totalPagado), icon:DollarSign,
+            detail:[
+              { label:'Pagos registrados', value: data.pagos.length + ' pago' + (data.pagos.length!==1?'s':'') },
+              { label:'Monto original', value: fmt(data.montoTotal) },
+              { label:'% cancelado', value: percent.toFixed(1) + '%', accent: true },
+            ]
+          }),
+          e(StatCard,{
+            label:'Saldo Restante', value:fmt(saldo), icon:TrendingDown, accent:theme.warning,
+            detail:[
+              { label:'De un total de', value: fmt(data.montoTotal) },
+              { label:'Pendiente (%)', value: (100 - percent).toFixed(1) + '%', accent: true },
+            ]
+          }),
+          e(StatCard,{
+            label:'Cuotas Pagadas', value:data.pagos.length, icon:Check, accent:theme.success,
+            detail: data.pagos.length > 0 ? [
+              { label:'Primera cuota', value: fmtFecha(data.pagos[0].fecha) },
+              { label:'Última cuota', value: fmtFecha(data.pagos[data.pagos.length-1].fecha) },
+            ] : null
+          }),
+          e(StatCard,{
+            label:'Promedio Cuota', value:fmt(promedio), icon:Calendar,
+            detail: data.pagos.length > 0 ? [
+              { label:'Total acumulado', value: fmt(totalPagado) },
+              { label:'N° de cuotas', value: String(data.pagos.length) },
+            ] : null
+          }),
+          data.pagos.length>0 && e(StatCard,{
+            label:'Cuota Más Alta', value:fmt(maxCuota), icon:ChevronUp,
+            detail:[
+              { label:'Diferencia vs promedio', value: fmt(maxCuota - promedio), accent: true },
+            ]
+          }),
+          data.pagos.length>0 && e(StatCard,{
+            label:'Cuota Más Baja', value:fmt(minCuota), icon:ChevronDown,
+            detail:[
+              { label:'Diferencia vs promedio', value: fmt(minCuota - promedio) },
+            ]
+          }),
+          mesesRestantes&&saldo>0 && e(StatCard,{
+            label:'Proyección', value:'~'+mesesRestantes+' meses', icon:Clock, accent:theme.accent,
+            detail:[
+              { label:'Saldo restante', value: fmt(saldo) },
+              { label:'Basado en promedio', value: fmt(promedio) + '/mes' },
+            ]
+          }),
+        ] }),
 
         data.pagos.length>0 && e(Card,{ style:{ marginBottom:20 } },
           e('h4',{ style:{ color:theme.text, marginTop:0, marginBottom:16, fontSize:16, fontWeight:700 } },'Evolución de la deuda'),
