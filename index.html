@@ -284,7 +284,11 @@
       return Number(String(s).replace(/[^0-9]/g, '')) || 0;
     }
     var monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+    function uid() {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+      // fallback UUID v4 para navegadores viejos
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){ var r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });
+    }
     function todayStr() { return new Date().toISOString().split('T')[0]; }
     function addMonths(mesKey, n) {
       var parts = mesKey.split('-').map(Number);
@@ -1044,7 +1048,7 @@
             var uid2=r.data.user.id;
             next.pagos.forEach(function(p){
               if(curIds.indexOf(p.id)===-1){
-                sb.from('pagos').insert({ id:p.id, prestamo_id:prestamoId, user_id:uid2, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobante:p.comprobante||null,historial:p.historial||[]}) }).then(function(){});
+                sb.from('pagos').insert({ id:p.id, prestamo_id:prestamoId, user_id:uid2, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobante:p.comprobante||null,historial:p.historial||[]}) }).then(function(r){ if(r&&r.error) console.error('[pagos insert]',r.error); });
               }
             });
           });
