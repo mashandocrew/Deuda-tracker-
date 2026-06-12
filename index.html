@@ -1247,7 +1247,7 @@
       var theme   = useContext(ThemeContext);
       var toast   = useContext(ToastContext);
       var qpCtx   = useContext(QuickPayContext);
-      var quickPayOpen = qpCtx.quickPayOpen, setQuickPayOpen = qpCtx.setQuickPayOpen;
+      var quickPayTarget = qpCtx.quickPayTarget, setQuickPayTarget = qpCtx.setQuickPayTarget;
       var cd      = useConfirm(); var confirm = cd[0]; var ConfirmDialog = cd[1];
       var data = props.data; var setData = props.setData;
       var sm = useState(false); var showModal=sm[0],setShowModal=sm[1];
@@ -1284,11 +1284,11 @@
       }, [data.pagos]);
 
       useEffect(function(){
-        if (quickPayOpen){
+        if (quickPayTarget && quickPayTarget === data.icono){
           setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobanteUrl:null, comprobanteNombre:'', notas:'' });
-          setEditIdx(null); setShowModal(true); setQuickPayOpen(false);
+          setEditIdx(null); setShowModal(true); setQuickPayTarget(null);
         }
-      }, [quickPayOpen]);
+      }, [quickPayTarget]);
 
       function resetForm(){ setForm({ fecha:todayStr(), monto:'', metodo:'efectivo', comprobanteUrl:null, comprobanteNombre:'', notas:'' }); }
       function openAdd(){ resetForm(); setEditIdx(null); setShowModal(true); }
@@ -1748,11 +1748,14 @@
       var isDark=props.isDark, setIsDark=props.setIsDark;
       var theme = isDark ? darkTheme : lightTheme;
 
-      var qpState = useState(false);
-      var quickPayOpen=qpState[0], setQuickPayOpen=qpState[1];
+      var qpState = useState(null);
+      var quickPayTarget=qpState[0], setQuickPayTarget=qpState[1];
 
       var fabState = useState(false);
       var fabHov=fabState[0], setFabHov=fabState[1];
+
+      var fabMenuState = useState(false);
+      var fabMenuOpen=fabMenuState[0], setFabMenuOpen=fabMenuState[1];
 
       var mobState = useState(window.innerWidth < 600);
       var isMobile=mobState[0], setIsMobile=mobState[1];
@@ -1772,7 +1775,7 @@
 
       return e(ThemeContext.Provider, { value: theme },
         e(ToastProvider, null,
-          e(QuickPayContext.Provider, { value: { quickPayOpen:quickPayOpen, setQuickPayOpen:setQuickPayOpen } },
+          e(QuickPayContext.Provider, { value: { quickPayTarget:quickPayTarget, setQuickPayTarget:setQuickPayTarget } },
             e(QuotaListener, null),
             e('div', { style: { minHeight:'100vh', background:theme.bg, color:theme.text, fontFamily:"'Inter',system-ui,-apple-system,sans-serif", transition:'background 0.3s ease, color 0.3s ease' } },
 
@@ -1796,13 +1799,41 @@
                 'DeudaTracker · '+new Date().toLocaleDateString('es-AR')
               ),
 
-              e('button', {
-                onClick: function(){ setQuickPayOpen(true); },
-                onMouseEnter: function(){ setFabHov(true); },
-                onMouseLeave: function(){ setFabHov(false); },
-                title: 'Registrar pago rápido',
-                style: { position:'fixed', bottom:isMobile?80:24, left:24, zIndex:500, width:56, height:56, borderRadius:'50%', background:theme.accent, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:fabHov?'0 8px 25px rgba(0,0,0,0.4)':'0 4px 15px rgba(0,0,0,0.25)', transform:fabHov?'scale(1.08)':'scale(1)', transition:'all 0.2s ease' }
-              }, e(Plus,{ size:24, color:'#fff' }))
+              fabMenuOpen && e('div', { onClick: function(){ setFabMenuOpen(false); }, style: { position:'fixed', inset:0, zIndex:499 } }),
+              e('div', { style: { position:'fixed', bottom:isMobile?80:24, left:24, zIndex:500, display:'flex', flexDirection:'column', alignItems:'flex-start', gap:10 } },
+                e('div', {
+                  style: {
+                    display:'flex', flexDirection:'column', gap:10, alignItems:'flex-start',
+                    opacity: fabMenuOpen ? 1 : 0,
+                    transform: fabMenuOpen ? 'translateY(0)' : 'translateY(16px)',
+                    pointerEvents: fabMenuOpen ? 'auto' : 'none',
+                    transition: 'opacity 0.22s ease, transform 0.22s ease',
+                    marginBottom: 4
+                  }
+                },
+                  e('div', { style: { display:'flex', alignItems:'center', gap:10 } },
+                    e('span', { style: { background:'rgba(22,22,32,0.97)', color:'#ececec', fontSize:13, fontWeight:600, padding:'6px 12px', borderRadius:8, boxShadow:'0 2px 8px rgba(0,0,0,0.4)', whiteSpace:'nowrap', border:'1px solid rgba(255,255,255,0.08)' } }, 'Celular'),
+                    e('button', {
+                      onClick: function(){ setFabMenuOpen(false); setQuickPayTarget('celular'); },
+                      style: { width:44, height:44, borderRadius:'50%', background:'#818cf8', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, boxShadow:'0 4px 12px rgba(0,0,0,0.3)', flexShrink:0 }
+                    }, '📱')
+                  ),
+                  e('div', { style: { display:'flex', alignItems:'center', gap:10 } },
+                    e('span', { style: { background:'rgba(22,22,32,0.97)', color:'#ececec', fontSize:13, fontWeight:600, padding:'6px 12px', borderRadius:8, boxShadow:'0 2px 8px rgba(0,0,0,0.4)', whiteSpace:'nowrap', border:'1px solid rgba(255,255,255,0.08)' } }, 'Moto'),
+                    e('button', {
+                      onClick: function(){ setFabMenuOpen(false); setQuickPayTarget('moto'); },
+                      style: { width:44, height:44, borderRadius:'50%', background:theme.accent, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, boxShadow:'0 4px 12px rgba(0,0,0,0.3)', flexShrink:0 }
+                    }, '🏍️')
+                  )
+                ),
+                e('button', {
+                  onClick: function(){ setFabMenuOpen(function(o){ return !o; }); },
+                  onMouseEnter: function(){ setFabHov(true); },
+                  onMouseLeave: function(){ setFabHov(false); },
+                  title: 'Registrar pago',
+                  style: { width:56, height:56, borderRadius:'50%', background:theme.accent, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:fabHov?'0 8px 25px rgba(0,0,0,0.4)':'0 4px 15px rgba(0,0,0,0.25)', transform:fabMenuOpen?'rotate(45deg)':(fabHov?'scale(1.08)':'scale(1)'), transition:'all 0.2s ease', flexShrink:0 }
+                }, e(Plus,{ size:24, color:'#fff' }))
+              )
             )
           )
         )
