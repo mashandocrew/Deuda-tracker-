@@ -625,13 +625,14 @@
       var animRef = useRef(0);
       var animState = useState(0);
       var animatedPercent = animState[0], setAnimatedPercent = animState[1];
+
       useEffect(function() {
         var rafId;
         function animate() {
-          var cur = animRef.current;
-          var diff = percent - cur;
+          var current = animRef.current;
+          var diff = percent - current;
           if (Math.abs(diff) <= 0.3) { animRef.current = percent; setAnimatedPercent(percent); return; }
-          animRef.current = cur + (diff > 0 ? 0.5 : -0.5);
+          animRef.current = current + (diff > 0 ? 0.5 : -0.5);
           setAnimatedPercent(animRef.current);
           rafId = requestAnimationFrame(animate);
         }
@@ -639,131 +640,112 @@
         return function() { cancelAnimationFrame(rafId); };
       }, [percent]);
 
-      var vw = 340, vh = 360;
-      // Front phone bounds (right, slightly larger/foreground)
-      var fx = 166, fy = 4, fw = 152, fh = 352, frx = 42;
-      // Back phone bounds (left, slightly smaller/background)
-      var bx = 8, by = 14, bw = 144, bh = 336, brx = 40;
-      var fillH = Math.max(0, (animatedPercent / 100) * vh);
-      var fillY = vh - fillH;
+      var accent = theme.accent;
+      var border = theme.border;
+      var surface = theme.surface;
+      var textCol = theme.text;
+      var isDarkMode = surface === '#242424' || surface === '#1e1e1e' || surface === '#2a2a2a' || surface.startsWith('#1') || surface.startsWith('#2');
 
-      return e('div', { style: { position:'relative', width:'100%', maxWidth:440, margin:'0 auto', userSelect:'none' } },
-        e('svg', { viewBox:'0 0 340 360', width:'100%', height:'auto' },
+      /* colores adaptativos al tema */
+      var bodyFill      = isDarkMode ? '#2d2836' : '#e7e3ec';
+      var bodyStroke    = isDarkMode ? '#4a4358' : '#c8c0d4';
+      var screenFill    = isDarkMode ? '#0a0a0a' : '#111111';
+      var islandFill    = '#000000';
+      var btnFill       = isDarkMode ? '#3a3347' : '#d0c8dc';
+      var innerFill     = isDarkMode ? '#1e1a28' : '#f5f2f8';
+      var cornerDeco    = isDarkMode ? '#3d3650' : '#ddd8e8';
+      var appleFill     = isDarkMode ? '#5a5268' : '#8c849a';
+
+      /* total altura de pantalla en el viewBox (coordenadas originales 0..150) */
+      var screenTop    = 2.4;
+      var screenBottom = 147.5;
+      var screenHeight = screenBottom - screenTop;
+      var fillH        = (animatedPercent / 100) * screenHeight;
+      var fillY        = screenBottom - fillH;
+
+      return e('div', { style: { position:'relative', width:'100%', maxWidth:260, margin:'0 auto', userSelect:'none' } },
+        e('svg', {
+          viewBox: '0 0 72.5 150',
+          width: '100%',
+          height: 'auto',
+          xmlns: 'http://www.w3.org/2000/svg',
+          xmlnsXlink: 'http://www.w3.org/1999/xlink'
+        },
+
           e('defs', null,
-            // Clip to front phone body
-            e('clipPath', { id:'cel-fclip' },
-              e('rect', { x:fx, y:fy, width:fw, height:fh, rx:frx })
-            ),
-            // Clip to back phone body
-            e('clipPath', { id:'cel-bclip' },
-              e('rect', { x:bx, y:by, width:bw, height:bh, rx:brx })
-            ),
-            // Clip fill region (bottom to top)
-            e('clipPath', { id:'cel-rclip' },
-              e('rect', { x:0, y:fillY, width:vw, height:fillH })
-            ),
-            // Metallic frame gradient
-            e('linearGradient', { id:'cel-frame', x1:'0', y1:'0', x2:'1', y2:'1' },
-              e('stop', { offset:'0%', stopColor:'#b0b0b0' }),
-              e('stop', { offset:'30%', stopColor:'#f2f2f2' }),
-              e('stop', { offset:'70%', stopColor:'#d0d0d0' }),
-              e('stop', { offset:'100%', stopColor:'#909090' })
-            ),
-            // Accent fill gradient (bottom bright, top softer)
-            e('linearGradient', { id:'cel-acc', x1:'0', y1:'1', x2:'0', y2:'0' },
-              e('stop', { offset:'0%', stopColor:theme.accent }),
-              e('stop', { offset:'100%', stopColor:theme.accent + 'bb' })
-            ),
-            // Camera lens gradient
-            e('radialGradient', { id:'cel-lens', cx:'40%', cy:'35%', r:'60%' },
-              e('stop', { offset:'0%', stopColor:'#555' }),
-              e('stop', { offset:'60%', stopColor:'#111' }),
-              e('stop', { offset:'100%', stopColor:'#333' })
-            ),
-            // Camera module gradient
-            e('linearGradient', { id:'cel-mod', x1:'0', y1:'0', x2:'1', y2:'1' },
-              e('stop', { offset:'0%', stopColor:'#2a2a2a' }),
-              e('stop', { offset:'100%', stopColor:'#111' })
+            e('clipPath', { id: 'iphone17ScreenClip' },
+              e('path', { d: 'M 13.312882,2.4648914 c -5.8047685,0 -10.4003983,4.5956227 -10.4003983,10.4003996 V 137.13471 c 0,5.80477 4.5956298,10.4004 10.4003983,10.4004 h 45.87472 c 5.80478,0 10.400398,-4.59563 10.400398,-10.4004 V 12.865291 C 69.588,7.0605141 64.992382,2.4648914 59.187602,2.4648914 Z' })
             )
           ),
 
-          /* ── BACK PHONE (ghost layer) ── */
-          e('g', { opacity:0.12 },
-            e('rect', { x:bx, y:by, width:bw, height:bh, rx:brx, fill:theme.text }),
-            // Camera module
-            e('rect', { x:bx+14, y:by+22, width:62, height:64, rx:18, fill:theme.text }),
-            e('circle', { cx:bx+37, cy:by+45, r:17, fill:theme.text }),
-            e('circle', { cx:bx+37, cy:by+78, r:14, fill:theme.text }),
-            e('circle', { cx:bx+66, cy:by+52, r:4, fill:theme.text }),
-            // Apple logo (simplified)
-            e('ellipse', { cx:bx+72, cy:by+192, rx:16, ry:18, fill:theme.text }),
-            e('rect', { x:bx+72-3, y:by+174, width:6, height:10, rx:3, fill:theme.text })
+          /* BOTONES LATERALES IZQUIERDA (silencio + volumen) */
+          e('rect', { x:0, y:30.692, width:7.642, height:6.972, ry:0.309, fill:btnFill }),
+          e('rect', { x:0.062, y:30.818, width:7.230, height:6.720, ry:0.298, fill:isDarkMode?'#4a4358':'#cfc8db' }),
+
+          e('path', { d:'M 0.555,42.772 H 7.580 c 0.171,0 0.309,0.138 0.309,0.309 v 10.627 c 0,0.171 -0.138,0.309 -0.309,0.309 H 0.555 c -0.171,0 -0.309,-0.138 -0.309,-0.309 V 43.080 c 0,-0.171 0.138,-0.309 0.309,-0.309 z', fill:btnFill }),
+          e('path', { d:'M 0.606,42.898 H 7.241 c 0.165,0 0.298,0.133 0.298,0.298 v 10.397 c 0,0.165 -0.133,0.298 -0.298,0.298 H 0.606 c -0.165,0 -0.298,-0.133 -0.298,-0.298 V 43.195 c 0,-0.165 0.133,-0.298 0.298,-0.298 z', fill:isDarkMode?'#4a4358':'#cfc8db' }),
+
+          e('path', { d:'M 0.310,57.002 H 7.334 c 0.171,0 0.309,0.138 0.309,0.309 v 10.627 c 0,0.171 -0.138,0.309 -0.309,0.309 H 0.310 c -0.171,0 -0.309,-0.138 -0.309,-0.309 V 57.311 c 0,-0.171 0.138,-0.309 0.309,-0.309 z', fill:btnFill }),
+          e('path', { d:'M 0.360,57.128 H 6.996 c 0.165,0 0.298,0.133 0.298,0.298 v 10.397 c 0,0.165 -0.133,0.298 -0.298,0.298 H 0.360 c -0.165,0 -0.298,-0.133 -0.298,-0.298 V 57.426 c 0,-0.165 0.133,-0.298 0.298,-0.298 z', fill:isDarkMode?'#4a4358':'#cfc8db' }),
+
+          /* BOTON LATERAL DERECHO (encendido) */
+          e('path', { d:'M 72.191,46.594 H 65.166 c -0.171,0 -0.309,0.138 -0.309,0.309 v 17.177 c 0,0.171 0.138,0.309 0.309,0.309 h 7.025 c 0.171,0 0.309,-0.138 0.309,-0.309 V 46.903 c 0,-0.171 -0.138,-0.309 -0.309,-0.309 z', fill:btnFill }),
+          e('path', { d:'M 72.140,46.720 H 65.505 c -0.165,0 -0.298,0.133 -0.298,0.298 v 16.948 c 0,0.165 0.133,0.298 0.298,0.298 h 6.635 c 0.165,0 0.298,-0.133 0.298,-0.298 V 47.018 c 0,-0.165 -0.133,-0.298 -0.298,-0.298 z', fill:isDarkMode?'#4a4358':'#cfc8db' }),
+
+          /* CUERPO PRINCIPAL */
+          e('rect', { x:0.447, y:0, width:71.607, height:150, ry:12.866, fill:bodyFill }),
+
+          /* capa interior glass */
+          e('path', { d:'M 13.312383,0.90038 c -6.6447174,0 -11.9667114,5.32044 -11.9667114,11.96516 V 137.135 c 0,6.64471 5.321994,11.96466 11.9667114,11.96466 h 45.875234 c 6.64472,0 11.96671,-5.31995 11.96671,-11.96466 V 12.865541 c 0,-6.6447199 -5.32199,-11.96516 -11.96671,-11.96516 z', fill:innerFill }),
+
+          /* decoracion esquinas tipo Apple */
+          e('path', { d:'M 56.059,0 V 15.528 H 0.446 v 1.055 H 72.053 V 15.528 H 57.114 V 0 Z M 0.446,133.417 v 1.055 H 15.386 v 15.528 h 1.055 v -15.528 h 55.613 v -1.055 z', fill:cornerDeco }),
+
+          /* PANTALLA (negro) */
+          e('path', { d:'M 13.312882,2.4648914 c -5.8047685,0 -10.4003983,4.5956227 -10.4003983,10.4003996 V 137.13471 c 0,5.80477 4.5956298,10.4004 10.4003983,10.4004 h 45.87472 c 5.80478,0 10.400398,-4.59563 10.400398,-10.4004 V 12.865291 C 69.588,7.0605141 64.992382,2.4648914 59.187602,2.4648914 Z M 28.818913,4.80325 h 14.862142 c 1.66928,0 3.013252,1.343978 3.013252,3.0132527 0,1.6692748 -1.343972,3.0132533 -3.013252,3.0132533 H 28.818913 c -1.66927,0 -3.012736,-1.3439785 -3.012736,-3.0132533 0,-1.6692747 1.343466,-3.0132527 3.012736,-3.0132527 z', fill:screenFill }),
+
+          /* RELLENO ANIMADO (clipeado a la pantalla) */
+          fillH > 0 && e('rect', {
+            x: 2.9, y: fillY,
+            width: 66.7, height: fillH,
+            fill: accent,
+            opacity: 0.45,
+            clipPath: 'url(#iphone17ScreenClip)'
+          }),
+
+          /* DYNAMIC ISLAND */
+          e('path', { d:'M 28.818913,4.80325 h 14.862142 c 1.66928,0 3.013252,1.343978 3.013252,3.0132527 0,1.6692748 -1.343972,3.0132533 -3.013252,3.0132533 H 28.818913 c -1.66927,0 -3.012736,-1.3439785 -3.012736,-3.0132533 0,-1.6692747 1.343466,-3.0132527 3.012736,-3.0132527 z', fill:islandFill }),
+          /* camara dentro de Dynamic Island */
+          e('circle', { cx:43.681, cy:7.817, r:1.545, fill:'#050505' }),
+          e('circle', { cx:43.681, cy:7.817, r:0.924, fill:'#0d0d0d' }),
+          /* Face ID dots */
+          e('circle', { cx:44.216, cy:7.590, r:0.682, transform:'rotate(15)', fill:'#020202' }),
+          e('circle', { cx:-44.216, cy:7.590, r:0.682, transform:'matrix(-0.96593,-0.25882,-0.25882,0.96593,0,0)', fill:'#020202' }),
+
+          /* LOGO APPLE */
+          e('g', { transform:'translate(36.25, 90) scale(0.22)' },
+            e('path', {
+              d: 'M 25.37,0 C 23.10,1.43 21.14,3.53 20.49,5.79 18.08,5.61 15.69,6.88 14.18,8.32 13.02,9.41 12.34,10.77 12.50,12.23 10.16,13.30 8.37,15.27 7.75,17.57 6.53,22.19 9.35,27.73 13.82,30.49 15.43,31.48 17.14,31.94 18.79,31.75 19.73,32.72 20.89,33.29 22.14,33.29 23.39,33.29 24.55,32.72 25.49,31.75 27.14,31.94 28.85,31.48 30.46,30.49 34.93,27.73 37.75,22.19 36.53,17.57 35.91,15.27 34.12,13.30 31.78,12.23 31.94,10.77 31.26,9.41 30.10,8.32 28.59,6.88 26.20,5.61 23.79,5.79 23.14,3.53 21.18,1.43 18.89,0 Z M 22.13,-5 C 22.13,-5 24.50,-2.50 22.13,0 Z',
+              fill: appleFill,
+              fillOpacity: 1
+            })
           ),
 
-          /* ── BACK PHONE (fill layer) ── */
-          e('g', { clipPath:'url(#cel-rclip)' },
-            e('g', { clipPath:'url(#cel-bclip)' },
-              e('rect', { x:bx, y:by, width:bw, height:bh, fill:'url(#cel-acc)' })
-            ),
-            // Camera module (stays dark)
-            e('rect', { x:bx+14, y:by+22, width:62, height:64, rx:18, fill:'#1a1a1a', opacity:0.85 }),
-            e('circle', { cx:bx+37, cy:by+45, r:17, fill:'url(#cel-lens)' }),
-            e('circle', { cx:bx+37, cy:by+45, r:12, fill:'#0a0a0a' }),
-            e('circle', { cx:bx+37, cy:by+45, r:7, fill:'#222', opacity:0.8 }),
-            e('circle', { cx:bx+37, cy:by+78, r:14, fill:'url(#cel-lens)' }),
-            e('circle', { cx:bx+37, cy:by+78, r:9, fill:'#0a0a0a' }),
-            e('circle', { cx:bx+37, cy:by+78, r:5, fill:'#222', opacity:0.8 }),
-            e('circle', { cx:bx+66, cy:by+52, r:4, fill:'#222' }),
-            // Apple logo
-            e('ellipse', { cx:bx+72, cy:by+192, rx:16, ry:18, fill:theme.accent, opacity:0.6 }),
-            e('rect', { x:bx+72-3, y:by+174, width:6, height:10, rx:3, fill:theme.accent, opacity:0.6 })
-          ),
-
-          /* ── BACK PHONE (frame, always on top) ── */
-          e('rect', { x:bx, y:by, width:bw, height:bh, rx:brx, fill:'none', stroke:'url(#cel-frame)', strokeWidth:3 }),
-          // Camera module frame
-          e('rect', { x:bx+14, y:by+22, width:62, height:64, rx:18, fill:'url(#cel-mod)' , opacity:0.0 }),
-          e('rect', { x:bx+14, y:by+22, width:62, height:64, rx:18, fill:'none', stroke:'#444', strokeWidth:1.5 }),
-          e('circle', { cx:bx+37, cy:by+45, r:17, fill:'none', stroke:'#555', strokeWidth:1 }),
-          e('circle', { cx:bx+37, cy:by+78, r:14, fill:'none', stroke:'#555', strokeWidth:1 }),
-          // Apple logo (always rendered over ghost+fill)
-          e('ellipse', { cx:bx+72, cy:by+192, rx:16, ry:18, fill:'none', stroke:'rgba(150,150,150,0.5)', strokeWidth:1.5 }),
-          e('rect', { x:bx+72-3, y:by+174, width:6, height:10, rx:3, fill:'none', stroke:'rgba(150,150,150,0.5)', strokeWidth:1.5 }),
-
-          /* ── FRONT PHONE (ghost layer) ── */
-          e('g', { opacity:0.13 },
-            e('rect', { x:fx, y:fy, width:fw, height:fh, rx:frx, fill:theme.text }),
-            e('rect', { x:fx+42, y:fy+18, width:68, height:21, rx:10.5, fill:theme.text }),
-            e('rect', { x:fx-5, y:fy+82, width:5, height:18, rx:2.5, fill:theme.text }),
-            e('rect', { x:fx-5, y:fy+108, width:5, height:32, rx:2.5, fill:theme.text }),
-            e('rect', { x:fx-5, y:fy+148, width:5, height:32, rx:2.5, fill:theme.text }),
-            e('rect', { x:fx+fw, y:fy+116, width:5, height:56, rx:2.5, fill:theme.text })
-          ),
-
-          /* ── FRONT PHONE (fill layer) ── */
-          e('g', { clipPath:'url(#cel-rclip)' },
-            e('g', { clipPath:'url(#cel-fclip)' },
-              e('rect', { x:fx, y:fy, width:fw, height:fh, fill:'url(#cel-acc)' })
-            ),
-            // Dynamic Island stays dark inside fill
-            e('rect', { x:fx+42, y:fy+18, width:68, height:21, rx:10.5, fill:'#111', opacity:0.9 }),
-            // Side buttons (accent colored)
-            e('rect', { x:fx-5, y:fy+82, width:5, height:18, rx:2.5, fill:theme.accent }),
-            e('rect', { x:fx-5, y:fy+108, width:5, height:32, rx:2.5, fill:theme.accent }),
-            e('rect', { x:fx-5, y:fy+148, width:5, height:32, rx:2.5, fill:theme.accent }),
-            e('rect', { x:fx+fw, y:fy+116, width:5, height:56, rx:2.5, fill:theme.accent })
-          ),
-
-          /* ── FRONT PHONE (frame, always on top) ── */
-          e('rect', { x:fx, y:fy, width:fw, height:fh, rx:frx, fill:'none', stroke:'url(#cel-frame)', strokeWidth:3.5 }),
-          // Screen inset ring
-          e('rect', { x:fx+5, y:fy+5, width:fw-10, height:fh-10, rx:frx-4, fill:'none', stroke:theme.border, strokeWidth:0.8, opacity:0.35 }),
-          // Dynamic Island (pill, always black on top)
-          e('rect', { x:fx+42, y:fy+18, width:68, height:21, rx:10.5, fill:'#111', opacity:0.88 }),
-          e('rect', { x:fx+42, y:fy+18, width:68, height:21, rx:10.5, fill:'none', stroke:'rgba(80,80,80,0.5)', strokeWidth:0.8 })
+          /* PORCENTAJE centrado en pantalla */
+          e('text', {
+            x: 36.25, y: 80,
+            textAnchor: 'middle',
+            dominantBaseline: 'middle',
+            fill: '#ffffff',
+            fontSize: 11,
+            fontWeight: 'bold',
+            fontFamily: "'Inter',system-ui,sans-serif",
+            opacity: 0.92
+          }, Math.round(animatedPercent) + '%')
         )
       );
     }
+
 
     function ComprobantePreview(props) {
       var theme = useContext(ThemeContext);
