@@ -1043,15 +1043,22 @@
         if (JSON.stringify(current.pagos)!==JSON.stringify(next.pagos)) {
           var curIds=current.pagos.map(function(p){ return p.id; });
           var nxtIds=next.pagos.map(function(p){ return p.id; });
+          // Optimistic local update
+          var newSbPags = next.pagos.map(function(p){ return { id:p.id, prestamo_id:prestamoId, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',historial:p.historial||[]}) }; });
+          setPagosByLoan(function(bl){ return Object.assign({},bl,(function(o){ o[prestamoId]=newSbPags; return o; })({})); });
+          // Deletes
           curIds.forEach(function(id){ if(nxtIds.indexOf(id)===-1) sb.from('pagos').delete().eq('id',id).then(function(){}); });
+          // Inserts — omit id, let Supabase generate UUID; reload after
           sb.auth.getUser().then(function(r){
             var uid2=r.data.user.id;
-            next.pagos.forEach(function(p){
-              if(curIds.indexOf(p.id)===-1){
-                sb.from('pagos').insert({ id:p.id, prestamo_id:prestamoId, user_id:uid2, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobante:p.comprobante||null,historial:p.historial||[]}) }).then(function(r){ if(r&&r.error) console.error('[pagos insert]',r.error); });
-              }
+            var inserts = next.pagos.filter(function(p){ return curIds.indexOf(p.id)===-1; });
+            var ps = inserts.map(function(p){
+              return sb.from('pagos').insert({ prestamo_id:prestamoId, user_id:uid2, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',comprobante:p.comprobante||null,historial:p.historial||[]}) })
+                .then(function(r){ if(r&&r.error) console.error('[pagos insert]',r.error); });
             });
+            if(ps.length>0) Promise.all(ps).then(function(){ loadData(); });
           });
+          // Updates
           next.pagos.forEach(function(p){
             if(curIds.indexOf(p.id)!==-1){
               var prev=current.pagos.find(function(pp){ return pp.id===p.id; });
@@ -1060,8 +1067,6 @@
               }
             }
           });
-          var newSbPags = next.pagos.map(function(p){ return { id:p.id, prestamo_id:prestamoId, monto:p.monto, fecha:p.fecha, descripcion:JSON.stringify({metodo:p.metodo||'efectivo',notas:p.notas||'',comprobanteNombre:p.comprobanteNombre||'',historial:p.historial||[]}) }; });
-          setPagosByLoan(function(bl){ return Object.assign({},bl,(function(o){ o[prestamoId]=newSbPags; return o; })({})); });
         }
       }
 
