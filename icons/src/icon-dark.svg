@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Base background gradient: near-black to deep navy -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#040d1a"/>
+      <stop offset="50%" stop-color="#071b2e"/>
+      <stop offset="100%" stop-color="#030b17"/>
+    </linearGradient>
+
+    <!-- Radial glow in center (cyan/electric) -->
+    <radialGradient id="centerGlow" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#071b2e" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Glass panel gradient (frosted dark glass) -->
+    <radialGradient id="glassFill" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#a5f3fc" stop-opacity="0.14"/>
+      <stop offset="60%" stop-color="#06b6d4" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#0e7490" stop-opacity="0.03"/>
+    </radialGradient>
+
+    <!-- Specular highlight arc (top) — brighter on dark -->
+    <linearGradient id="specular" x1="0.3" y1="0" x2="0.7" y2="0.5">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.50"/>
+      <stop offset="60%" stop-color="#22d3ee" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Inner shadow at bottom -->
+    <radialGradient id="innerShadow" cx="50%" cy="100%" r="70%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Progress ring track color -->
+    <linearGradient id="trackGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#164e63" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#0e7490" stop-opacity="0.25"/>
+    </linearGradient>
+
+    <!-- Progress ring fill: electric cyan/neon -->
+    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="50%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+
+    <!-- Ring glow filter (more intense on dark) -->
+    <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Soft blur for glass overlay -->
+    <filter id="softBlur" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+
+    <!-- Border glow filter -->
+    <filter id="borderGlow" x="-2%" y="-2%" width="104%" height="104%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Glass stroke gradient (cyan-tinted on dark) -->
+    <linearGradient id="borderGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.65"/>
+      <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.08"/>
+    </linearGradient>
+
+    <!-- Clip for full square -->
+    <clipPath id="squareClip">
+      <rect width="1024" height="1024"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#squareClip)">
+    <!-- 1. Base background -->
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+
+    <!-- 2. Subtle center radial glow -->
+    <rect width="1024" height="1024" fill="url(#centerGlow)"/>
+
+    <!-- 3. Frosted glass overlay -->
+    <circle cx="512" cy="490" r="340" fill="url(#glassFill)" filter="url(#softBlur)"/>
+
+    <!-- 4. Progress ring track -->
+    <circle cx="512" cy="510" r="290"
+            fill="none"
+            stroke="url(#trackGrad)"
+            stroke-width="72"
+            stroke-linecap="round"/>
+
+    <!-- 5. Progress arc ~65%
+         startX=512, startY=220, endX=277.4, endY=680.5
+    -->
+    <path d="M 512 220
+             A 290 290 0 1 1 277.4 680.5"
+          fill="none"
+          stroke="url(#ringGrad)"
+          stroke-width="72"
+          stroke-linecap="round"
+          filter="url(#ringGlow)"/>
+
+    <!-- 6. Ring end dot glow -->
+    <circle cx="277.4" cy="680.5" r="36"
+            fill="#22d3ee" opacity="0.85"
+            filter="url(#softBlur)"/>
+
+    <!-- 7. Glass disk center -->
+    <circle cx="512" cy="510" r="198"
+            fill="url(#glassFill)"
+            stroke="url(#borderGrad)"
+            stroke-width="1.5"/>
+
+    <!-- 8. "DT" monogram -->
+    <text x="470" y="560"
+          font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+          font-weight="700"
+          font-size="148"
+          fill="#67e8f9"
+          opacity="0.95"
+          text-anchor="middle"
+          dominant-baseline="auto"
+          letter-spacing="-4">DT</text>
+
+    <!-- 9. Specular highlight arc top -->
+    <ellipse cx="512" cy="340" rx="340" ry="210"
+             fill="url(#specular)"
+             filter="url(#softBlur)"/>
+
+    <!-- 10. Thin specular line top edge -->
+    <path d="M 180 200 Q 512 140 844 200"
+          fill="none"
+          stroke="#67e8f9"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          opacity="0.55"/>
+
+    <!-- 11. Inner bottom shadow -->
+    <rect width="1024" height="1024" fill="url(#innerShadow)"/>
+
+    <!-- 12. Outer border glow (cyan on dark) -->
+    <rect x="1" y="1" width="1022" height="1022"
+          fill="none"
+          stroke="url(#borderGrad)"
+          stroke-width="4"
+          filter="url(#borderGlow)"/>
+  </g>
+</svg>
